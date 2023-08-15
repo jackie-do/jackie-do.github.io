@@ -1,0 +1,1 @@
+{"componentChunkName":"component---src-templates-tags-js","path":"/tags/database/","result":{"data":{"allMarkdownRemark":{"totalCount":1,"edges":[{"node":{"fields":{"slug":"/2023-01-01-sql-antipatterns-jaywalking-01/"},"frontmatter":{"title":"SQL Antipatterns - Jaywalking (01)"}}}]}},"pageContext":{"tag":"database"}},"staticQueryHashes":["2841359383"],"slicesMap":{}}
