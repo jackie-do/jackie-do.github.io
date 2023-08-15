@@ -1,0 +1,551 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="x-ua-compatible" content="ie=edge"/><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"/><meta name="generator" content="Gatsby 5.10.0"/><meta name="theme-color" content="#663399"/><meta data-react-helmet="true" name="description" content="Cách sử lý multi-tasking trong Ruby bằng các sử dụng Thread, Fiber và Ractor"/><meta data-react-helmet="true" property="og:title" content="Đa tác vụ trong Ruby - Gửi lời chào tới Thread, Fiber và Ractor"/><meta data-react-helmet="true" property="og:description" content="Cách sử lý multi-tasking trong Ruby bằng các sử dụng Thread, Fiber và Ractor"/><meta data-react-helmet="true" property="og:type" content="website"/><meta data-react-helmet="true" name="twitter:card" content="summary"/><meta data-react-helmet="true" name="twitter:creator" content=""/><meta data-react-helmet="true" name="twitter:title" content="Đa tác vụ trong Ruby - Gửi lời chào tới Thread, Fiber và Ractor"/><meta data-react-helmet="true" name="twitter:description" content="Cách sử lý multi-tasking trong Ruby bằng các sử dụng Thread, Fiber và Ractor"/><style data-href="/styles.298dbd71fe4dd10782e0.css" data-identity="gatsby-global-css">@font-face{font-display:swap;font-family:Montserrat;font-style:normal;font-weight:100;src:local("Montserrat Thin "),local("Montserrat-Thin"),url(/static/montserrat-latin-100-8d7d79679b70dbe27172b6460e7a7910.woff2) format("woff2"),url(/static/montserrat-latin-100-ec38980a9e0119a379e2a9b3dbb1901a.woff) format("woff")}@font-face{font-display:swap;font-family:Montserrat;font-style:italic;font-weight:100;src:local("Montserrat Thin italic"),local("Montserrat-Thinitalic"),url(/static/montserrat-latin-100italic-e279051046ba1286706adc886cf1c96b.woff2) format("woff2"),url(/static/montserrat-latin-100italic-3b325a3173c8207435cd1b76e19bf501.woff) format("woff")}@font-face{font-display:swap;font-family:Montserrat;font-style:normal;font-weight:200;src:local("Montserrat Extra Light "),local("Montserrat-Extra Light"),url(/static/montserrat-latin-200-9d266fbbfa6cab7009bd56003b1eeb67.woff2) format("woff2"),url(/static/montserrat-latin-200-2d8ba08717110d27122e54c34b8a5798.woff) format("woff")}@font-face{font-display:swap;font-family:Montserrat;font-style:italic;font-weight:200;src:local("Montserrat Extra Light italic"),local("Montserrat-Extra Lightitalic"),url(/static/montserrat-latin-200italic-6e5b3756583bb2263eb062eae992735e.woff2) format("woff2"),url(/static/montserrat-latin-200italic-a0d6f343e4b536c582926255367a57da.woff) format("woff")}@font-face{font-display:swap;font-family:Montserrat;font-style:normal;font-weight:300;src:local("Montserrat Light "),local("Montserrat-Light"),url(/static/montserrat-latin-300-00b3e893aab5a8fd632d6342eb72551a.woff2) format("woff2"),url(/static/montserrat-latin-300-ea303695ceab35f17e7d062f30e0173b.woff) format("woff")}@font-face{font-display:swap;font-family:Montserrat;font-style:italic;font-weight:300;src:local("Montserrat Light italic"),local("Montserrat-Lightitalic"),url(/static/montserrat-latin-300italic-56f34ea368f6aedf89583d444bbcb227.woff2) format("woff2"),url(/static/montserrat-latin-300italic-54b0bf2c8c4c12ffafd803be2466a790.woff) format("woff")}@font-face{font-display:swap;font-family:Montserrat;font-style:normal;font-weight:400;src:local("Montserrat Regular "),local("Montserrat-Regular"),url(/static/montserrat-latin-400-b71748ae4f80ec8c014def4c5fa8688b.woff2) format("woff2"),url(/static/montserrat-latin-400-0659a9f4e90db5cf51b50d005bff1e41.woff) format("woff")}@font-face{font-display:swap;font-family:Montserrat;font-style:italic;font-weight:400;src:local("Montserrat Regular italic"),local("Montserrat-Regularitalic"),url(/static/montserrat-latin-400italic-6eed6b4cbb809c6efc7aa7ddad6dbe3e.woff2) format("woff2"),url(/static/montserrat-latin-400italic-7583622cfde30ae49086d18447ab28e7.woff) format("woff")}@font-face{font-display:swap;font-family:Montserrat;font-style:normal;font-weight:500;src:local("Montserrat Medium "),local("Montserrat-Medium"),url(/static/montserrat-latin-500-091b209546e16313fd4f4fc36090c757.woff2) format("woff2"),url(/static/montserrat-latin-500-edd311588712a96bbf435fad264fff62.woff) format("woff")}@font-face{font-display:swap;font-family:Montserrat;font-style:italic;font-weight:500;src:local("Montserrat Medium italic"),local("Montserrat-Mediumitalic"),url(/static/montserrat-latin-500italic-c90ced68b46050061d1a41842d6dfb43.woff2) format("woff2"),url(/static/montserrat-latin-500italic-5146cbfe02b1deea5dffea27a5f2f998.woff) format("woff")}@font-face{font-display:swap;font-family:Montserrat;font-style:normal;font-weight:600;src:local("Montserrat SemiBold "),local("Montserrat-SemiBold"),url(/static/montserrat-latin-600-0480d2f8a71f38db8633b84d8722e0c2.woff2) format("woff2"),url(/static/montserrat-latin-600-b77863a375260a05dd13f86a1cee598f.woff) format("woff")}@font-face{font-display:swap;font-family:Montserrat;font-style:italic;font-weight:600;src:local("Montserrat SemiBold italic"),local("Montserrat-SemiBolditalic"),url(/static/montserrat-latin-600italic-cf46ffb11f3a60d7df0567f8851a1d00.woff2) format("woff2"),url(/static/montserrat-latin-600italic-c4fcfeeb057724724097167e57bd7801.woff) format("woff")}@font-face{font-display:swap;font-family:Montserrat;font-style:normal;font-weight:700;src:local("Montserrat Bold "),local("Montserrat-Bold"),url(/static/montserrat-latin-700-7dbcc8a5ea2289d83f657c25b4be6193.woff2) format("woff2"),url(/static/montserrat-latin-700-99271a835e1cae8c76ef8bba99a8cc4e.woff) format("woff")}@font-face{font-display:swap;font-family:Montserrat;font-style:italic;font-weight:700;src:local("Montserrat Bold italic"),local("Montserrat-Bolditalic"),url(/static/montserrat-latin-700italic-c41ad6bdb4bd504a843d546d0a47958d.woff2) format("woff2"),url(/static/montserrat-latin-700italic-6779372f04095051c62ed36bc1dcc142.woff) format("woff")}@font-face{font-display:swap;font-family:Montserrat;font-style:normal;font-weight:800;src:local("Montserrat ExtraBold "),local("Montserrat-ExtraBold"),url(/static/montserrat-latin-800-db9a3e0ba7eaea32e5f55328ace6cf23.woff2) format("woff2"),url(/static/montserrat-latin-800-4e3c615967a2360f5db87d2f0fd2456f.woff) format("woff")}@font-face{font-display:swap;font-family:Montserrat;font-style:italic;font-weight:800;src:local("Montserrat ExtraBold italic"),local("Montserrat-ExtraBolditalic"),url(/static/montserrat-latin-800italic-bf45bfa14805969eda318973947bc42b.woff2) format("woff2"),url(/static/montserrat-latin-800italic-fe82abb0bcede51bf724254878e0c374.woff) format("woff")}@font-face{font-display:swap;font-family:Montserrat;font-style:normal;font-weight:900;src:local("Montserrat Black "),local("Montserrat-Black"),url(/static/montserrat-latin-900-e66c7edc609e24bacbb705175669d814.woff2) format("woff2"),url(/static/montserrat-latin-900-8211f418baeb8ec880b80ba3c682f957.woff) format("woff")}@font-face{font-display:swap;font-family:Montserrat;font-style:italic;font-weight:900;src:local("Montserrat Black italic"),local("Montserrat-Blackitalic"),url(/static/montserrat-latin-900italic-4454c775e48152c1a72510ceed3603e2.woff2) format("woff2"),url(/static/montserrat-latin-900italic-efcaa0f6a82ee0640b83a0916e6e8d68.woff) format("woff")}@font-face{font-display:swap;font-family:Merriweather;font-style:normal;font-weight:300;src:local("Merriweather Light "),local("Merriweather-Light"),url(/static/merriweather-latin-300-fc117160c69a8ea0851b26dd14748ee4.woff2) format("woff2"),url(/static/merriweather-latin-300-58b18067ebbd21fda77b67e73c241d3b.woff) format("woff")}@font-face{font-display:swap;font-family:Merriweather;font-style:italic;font-weight:300;src:local("Merriweather Light italic"),local("Merriweather-Lightitalic"),url(/static/merriweather-latin-300italic-fe29961474f8dbf77c0aa7b9a629e4bc.woff2) format("woff2"),url(/static/merriweather-latin-300italic-23c3f1f88683618a4fb8d265d33d383a.woff) format("woff")}@font-face{font-display:swap;font-family:Merriweather;font-style:normal;font-weight:400;src:local("Merriweather Regular "),local("Merriweather-Regular"),url(/static/merriweather-latin-400-d9479e8023bef9cbd9bf8d6eabd6bf36.woff2) format("woff2"),url(/static/merriweather-latin-400-040426f99ff6e00b86506452e0d1f10b.woff) format("woff")}@font-face{font-display:swap;font-family:Merriweather;font-style:italic;font-weight:400;src:local("Merriweather Regular italic"),local("Merriweather-Regularitalic"),url(/static/merriweather-latin-400italic-2de7bfeaf08fb03d4315d49947f062f7.woff2) format("woff2"),url(/static/merriweather-latin-400italic-79db67aca65f5285964ab332bd65f451.woff) format("woff")}@font-face{font-display:swap;font-family:Merriweather;font-style:normal;font-weight:700;src:local("Merriweather Bold "),local("Merriweather-Bold"),url(/static/merriweather-latin-700-4b08e01d805fa35d7bf777f1b24314ae.woff2) format("woff2"),url(/static/merriweather-latin-700-22fb8afba4ab1f093b6ef9e28a9b6e92.woff) format("woff")}@font-face{font-display:swap;font-family:Merriweather;font-style:italic;font-weight:700;src:local("Merriweather Bold italic"),local("Merriweather-Bolditalic"),url(/static/merriweather-latin-700italic-cd92541b177652fffb6e3b952f1c33f1.woff2) format("woff2"),url(/static/merriweather-latin-700italic-f87f3d87cea0dd0979bfc8ac9ea90243.woff) format("woff")}@font-face{font-display:swap;font-family:Merriweather;font-style:normal;font-weight:900;src:local("Merriweather Black "),local("Merriweather-Black"),url(/static/merriweather-latin-900-f813fc6a4bee46eda5224ac7ebf1b7be.woff2) format("woff2"),url(/static/merriweather-latin-900-5d4e42cb44410674acd99153d57df032.woff) format("woff")}@font-face{font-display:swap;font-family:Merriweather;font-style:italic;font-weight:900;src:local("Merriweather Black italic"),local("Merriweather-Blackitalic"),url(/static/merriweather-latin-900italic-b7901d85486871c1779c0e93ddd85656.woff2) format("woff2"),url(/static/merriweather-latin-900italic-9647f9fdab98756989a8a5550eb205c3.woff) format("woff")}
+
+
+/*! normalize.css v8.0.1 | MIT License | github.com/necolas/normalize.css */html{-webkit-text-size-adjust:100%;line-height:1.15}body{margin:0}main{display:block}h1{font-size:2em;margin:.67em 0}hr{box-sizing:content-box;height:0;overflow:visible}pre{font-family:monospace,monospace;font-size:1em}a{background-color:transparent}abbr[title]{border-bottom:none;text-decoration:underline;-webkit-text-decoration:underline dotted;text-decoration:underline dotted}b,strong{font-weight:bolder}code,kbd,samp{font-family:monospace,monospace;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}img{border-style:none}button,input,optgroup,select,textarea{font-family:inherit;font-size:100%;line-height:1.15;margin:0}button,input{overflow:visible}button,select{text-transform:none}[type=button],[type=reset],[type=submit],button{-webkit-appearance:button}[type=button]::-moz-focus-inner,[type=reset]::-moz-focus-inner,[type=submit]::-moz-focus-inner,button::-moz-focus-inner{border-style:none;padding:0}[type=button]:-moz-focusring,[type=reset]:-moz-focusring,[type=submit]:-moz-focusring,button:-moz-focusring{outline:1px dotted ButtonText}fieldset{padding:.35em .75em .625em}legend{box-sizing:border-box;color:inherit;display:table;max-width:100%;padding:0;white-space:normal}progress{vertical-align:baseline}textarea{overflow:auto}[type=checkbox],[type=radio]{box-sizing:border-box;padding:0}[type=number]::-webkit-inner-spin-button,[type=number]::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}[type=search]::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}details{display:block}summary{display:list-item}[hidden]{display:none}:root{--maxWidth-none:"none";--maxWidth-xs:20rem;--maxWidth-sm:24rem;--maxWidth-md:28rem;--maxWidth-lg:32rem;--maxWidth-xl:36rem;--maxWidth-2xl:42rem;--maxWidth-3xl:48rem;--maxWidth-4xl:56rem;--maxWidth-full:"100%";--maxWidth-wrapper:var(--maxWidth-2xl);--spacing-px:"1px";--spacing-0:0;--spacing-1:0.25rem;--spacing-2:0.5rem;--spacing-3:0.75rem;--spacing-4:1rem;--spacing-5:1.25rem;--spacing-6:1.5rem;--spacing-8:2rem;--spacing-10:2.5rem;--spacing-12:3rem;--spacing-16:4rem;--spacing-20:5rem;--spacing-24:6rem;--spacing-32:8rem;--fontFamily-sans:Roboto,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";--fontFamily-serif:"Barlow","Times New Roman",serif;--font-body:var(--fontFamily-serif);--font-heading:var(--fontFamily-sans);--fontWeight-normal:400;--fontWeight-medium:500;--fontWeight-semibold:600;--fontWeight-bold:700;--fontWeight-extrabold:800;--fontWeight-black:900;--fontSize-root:16px;--lineHeight-none:1;--lineHeight-tight:1.1;--lineHeight-normal:1.5;--lineHeight-relaxed:1.625;--fontSize-0:0.833rem;--fontSize-1:1rem;--fontSize-2:1.2rem;--fontSize-3:1.44rem;--fontSize-4:1.728rem;--fontSize-5:2.074rem;--fontSize-6:2.488rem;--fontSize-7:2.986rem;--color-primary:#005b99;--color-text:#2e353f;--color-text-light:#4f5969;--color-heading:#1a202c;--color-heading-black:#000;--color-accent:#d1dce5}*,:after,:before{box-sizing:border-box}html{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;font-size:var(--fontSize-root);line-height:var(--lineHeight-normal)}body{color:var(--color-text);font-family:var(--font-body);font-size:var(--fontSize-1)}footer{padding:var(--spacing-6) var(--spacing-0)}hr{background:var(--color-accent);border:0;height:1px}h1,h2,h3,h4,h5,h6{font-family:var(--font-heading);letter-spacing:-.025em;line-height:var(--lineHeight-tight);margin-bottom:var(--spacing-6);margin-top:var(--spacing-10)}h2,h3,h4,h5,h6{color:var(--color-heading);font-weight:var(--fontWeight-bold)}h1{color:var(--color-heading-black);font-size:var(--fontSize-6);font-weight:var(--fontWeight-black)}h2{font-size:var(--fontSize-5)}h3{font-size:var(--fontSize-4)}h4{font-size:var(--fontSize-3)}h5{font-size:var(--fontSize-2)}h6{font-size:var(--fontSize-1)}h1>a,h2>a,h3>a,h4>a,h5>a,h6>a{color:inherit;text-decoration:none}p{--baseline-multiplier:0.179;--x-height-multiplier:0.35;line-height:var(--lineHeight-relaxed);margin:var(--spacing-0) var(--spacing-0) var(--spacing-4) var(--spacing-0)}ol,p,ul{padding:var(--spacing-0)}ol,ul{list-style-image:none;list-style-position:outside;margin-bottom:var(--spacing-8);margin-left:var(--spacing-6);margin-right:var(--spacing-0)}ol li,ul li{margin-bottom:calc(var(--spacing-6)/2);padding-left:var(--spacing-0)}li>p{margin-bottom:calc(var(--spacing-8)/2)}li :last-child{margin-bottom:var(--spacing-0)}li>ul{margin-left:var(--spacing-8);margin-top:calc(var(--spacing-8)/2)}blockquote{border-left:var(--spacing-1) solid var(--color-primary);color:var(--color-text-light);font-size:var(--fontSize-1);font-style:italic;margin-bottom:var(--spacing-8);margin-left:calc(var(--spacing-6)*-1);margin-right:var(--spacing-8);padding:var(--spacing-0) var(--spacing-0) var(--spacing-0) var(--spacing-6)}blockquote>:last-child{margin-bottom:var(--spacing-0)}blockquote>ol,blockquote>ul{list-style-position:inside}table{border-collapse:collapse;border-spacing:.25rem;margin-bottom:var(--spacing-8);width:100%}table thead tr th{border-bottom:1px solid var(--color-accent)}a{color:var(--color-primary)}a:focus,a:hover{text-decoration:none}.global-wrapper{margin:var(--spacing-0) auto;max-width:var(--maxWidth-wrapper);padding:var(--spacing-10) var(--spacing-5)}.global-wrapper[data-is-root-path=true] .bio{margin-bottom:var(--spacing-20)}.global-header{margin-bottom:var(--spacing-12)}.main-heading{font-size:var(--fontSize-7);margin:0}.post-list-item{margin-bottom:var(--spacing-8);margin-top:var(--spacing-8)}.post-list-item p{margin-bottom:var(--spacing-0)}.post-list-item h2{color:var(--color-primary);font-size:var(--fontSize-4);margin-bottom:var(--spacing-2);margin-top:var(--spacing-0)}.post-list-item header{margin-bottom:var(--spacing-4)}.header-link-home{font-family:var(--font-heading);font-size:var(--fontSize-2);font-weight:var(--fontWeight-bold);text-decoration:none}.bio{display:flex;margin-bottom:var(--spacing-16)}.bio p,.bio-avatar{margin-bottom:var(--spacing-0)}.bio-avatar{border-radius:100%;margin-right:var(--spacing-4);min-width:50px}.blog-post header h1{margin:var(--spacing-0) var(--spacing-0) var(--spacing-4) var(--spacing-0)}.blog-post header p{font-family:var(--font-heading);font-size:var(--fontSize-2)}.blog-post-nav ul{margin:var(--spacing-0)}.gatsby-highlight{margin-bottom:var(--spacing-8)}@media (max-width:42rem){blockquote{margin-left:var(--spacing-0);padding:var(--spacing-0) var(--spacing-0) var(--spacing-0) var(--spacing-4)}ol,ul{list-style-position:inside}}.tag__container{display:flex}.tag__container .tag-item{font-size:var(--fontSize-0);margin-right:10px}.table-of-contents{max-height:1000px;max-width:420px;overflow:auto;position:fixed;right:20px;top:80px}code[class*=language-],pre[class*=language-]{word-wrap:normal;background:none;color:#000;font-family:Consolas,Monaco,Andale Mono,Ubuntu Mono,monospace;font-size:1em;-webkit-hyphens:none;hyphens:none;line-height:1.5;tab-size:4;text-align:left;text-shadow:0 1px #fff;white-space:pre;word-break:normal;word-spacing:normal}code[class*=language-] ::selection,code[class*=language-]::selection,pre[class*=language-] ::selection,pre[class*=language-]::selection{background:#b3d4fc;text-shadow:none}@media print{code[class*=language-],pre[class*=language-]{text-shadow:none}}pre[class*=language-]{margin:.5em 0;overflow:auto;padding:1em}:not(pre)>code[class*=language-],pre[class*=language-]{background:#f5f2f0}:not(pre)>code[class*=language-]{border-radius:.3em;padding:.1em;white-space:normal}.token.cdata,.token.comment,.token.doctype,.token.prolog{color:#708090}.token.punctuation{color:#999}.token.namespace{opacity:.7}.token.boolean,.token.constant,.token.deleted,.token.number,.token.property,.token.symbol,.token.tag{color:#905}.token.attr-name,.token.builtin,.token.char,.token.inserted,.token.selector,.token.string{color:#690}.language-css .token.string,.style .token.string,.token.entity,.token.operator,.token.url{background:hsla(0,0%,100%,.5);color:#9a6e3a}.token.atrule,.token.attr-value,.token.keyword{color:#07a}.token.class-name,.token.function{color:#dd4a68}.token.important,.token.regex,.token.variable{color:#e90}.token.bold,.token.important{font-weight:700}.token.italic{font-style:italic}.token.entity{cursor:help}</style><style>.gatsby-image-wrapper{position:relative;overflow:hidden}.gatsby-image-wrapper picture.object-fit-polyfill{position:static!important}.gatsby-image-wrapper img{bottom:0;height:100%;left:0;margin:0;max-width:none;padding:0;position:absolute;right:0;top:0;width:100%;object-fit:cover}.gatsby-image-wrapper [data-main-image]{opacity:0;transform:translateZ(0);transition:opacity .25s linear;will-change:opacity}.gatsby-image-wrapper-constrained{display:inline-block;vertical-align:top}</style><noscript><style>.gatsby-image-wrapper noscript [data-main-image]{opacity:1!important}.gatsby-image-wrapper [data-placeholder-image]{opacity:0!important}</style></noscript><script type="module">const e="undefined"!=typeof HTMLImageElement&&"loading"in HTMLImageElement.prototype;e&&document.body.addEventListener("load",(function(e){const t=e.target;if(void 0===t.dataset.mainImage)return;if(void 0===t.dataset.gatsbyImageSsr)return;let a=null,n=t;for(;null===a&&n;)void 0!==n.parentNode.dataset.gatsbyImageWrapper&&(a=n.parentNode),n=n.parentNode;const o=a.querySelector("[data-placeholder-image]"),r=new Image;r.src=t.currentSrc,r.decode().catch((()=>{})).then((()=>{t.style.opacity=1,o&&(o.style.opacity=0,o.style.transition="opacity 500ms linear")}))}),!0);</script><style type="text/css">
+    .anchor.before {
+      position: absolute;
+      top: 0;
+      left: 0;
+      transform: translateX(-100%);
+      padding-right: 4px;
+    }
+    .anchor.after {
+      display: inline-block;
+      padding-left: 4px;
+    }
+    h1 .anchor svg,
+    h2 .anchor svg,
+    h3 .anchor svg,
+    h4 .anchor svg,
+    h5 .anchor svg,
+    h6 .anchor svg {
+      visibility: hidden;
+    }
+    h1:hover .anchor svg,
+    h2:hover .anchor svg,
+    h3:hover .anchor svg,
+    h4:hover .anchor svg,
+    h5:hover .anchor svg,
+    h6:hover .anchor svg,
+    h1 .anchor:focus svg,
+    h2 .anchor:focus svg,
+    h3 .anchor:focus svg,
+    h4 .anchor:focus svg,
+    h5 .anchor:focus svg,
+    h6 .anchor:focus svg {
+      visibility: visible;
+    }
+  </style><script>
+    document.addEventListener("DOMContentLoaded", function(event) {
+      var hash = window.decodeURI(location.hash.replace('#', ''))
+      if (hash !== '') {
+        var element = document.getElementById(hash)
+        if (element) {
+          var scrollTop = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop
+          var clientTop = document.documentElement.clientTop || document.body.clientTop || 0
+          var offset = element.getBoundingClientRect().top + scrollTop - clientTop
+          // Wait for the browser to finish rendering before scrolling.
+          setTimeout((function() {
+            window.scrollTo(0, offset - 0)
+          }), 0)
+        }
+      }
+    })
+  </script><link rel="icon" href="/favicon-32x32.png?v=e4fd158f76ad51bac7a0463c16f58f40" type="image/png"/><link rel="manifest" href="/manifest.webmanifest" crossorigin="anonymous"/><link rel="apple-touch-icon" sizes="48x48" href="/icons/icon-48x48.png?v=e4fd158f76ad51bac7a0463c16f58f40"/><link rel="apple-touch-icon" sizes="72x72" href="/icons/icon-72x72.png?v=e4fd158f76ad51bac7a0463c16f58f40"/><link rel="apple-touch-icon" sizes="96x96" href="/icons/icon-96x96.png?v=e4fd158f76ad51bac7a0463c16f58f40"/><link rel="apple-touch-icon" sizes="144x144" href="/icons/icon-144x144.png?v=e4fd158f76ad51bac7a0463c16f58f40"/><link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192x192.png?v=e4fd158f76ad51bac7a0463c16f58f40"/><link rel="apple-touch-icon" sizes="256x256" href="/icons/icon-256x256.png?v=e4fd158f76ad51bac7a0463c16f58f40"/><link rel="apple-touch-icon" sizes="384x384" href="/icons/icon-384x384.png?v=e4fd158f76ad51bac7a0463c16f58f40"/><link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512x512.png?v=e4fd158f76ad51bac7a0463c16f58f40"/><title data-react-helmet="true">Đa tác vụ trong Ruby - Gửi lời chào tới Thread, Fiber và Ractor | Jackie&#x27;s Blog</title></head><body><div id="___gatsby"><div style="outline:none" tabindex="-1" id="gatsby-focus-wrapper"><div class="global-wrapper" data-is-root-path="false"><header class="global-header"><a class="header-link-home" href="/">Jackie&#x27;s Blog</a></header><main><article class="blog-post" itemscope="" itemType="http://schema.org/Article"><header><h1 itemProp="headline">Đa tác vụ trong Ruby - Gửi lời chào tới Thread, Fiber và Ractor</h1><p>December 14, 2022</p></header><section itemProp="articleBody"><div class="table-of-contents">
+<ul>
+<li>
+<p><a href="#i-gi%E1%BB%9Bi-thi%E1%BB%87u-v%E1%BB%81-%C4%91a-t%C3%A1c-v%E1%BB%A5---%C4%91a-nhi%E1%BB%87m-trong-ruby">I. Giới thiệu về đa tác vụ - đa nhiệm trong Ruby</a></p>
+</li>
+<li>
+<p><a href="#ii-multithreading-v%E1%BB%9Bi-thread">II. Multithreading với Thread</a></p>
+<ul>
+<li>
+<p><a href="#1-t%E1%BA%A1o-v%C3%A0-t%C6%B0%C6%A1ng-t%C3%A1c-v%E1%BB%9Bi-thread">1. Tạo và tương tác với thread</a></p>
+<ul>
+<li><a href="#a-t%E1%BA%A1o-thread">a. Tạo thread</a></li>
+<li><a href="#b-t%C6%B0%C6%A1ng-t%C3%A1c-v%E1%BB%9Bi-thread">b. Tương tác với Thread</a></li>
+</ul>
+</li>
+<li>
+<p><a href="#2-s%E1%BB%AD-d%E1%BB%A5ng-variables-trong-thread">2. Sử dụng variables trong thread</a></p>
+</li>
+<li>
+<p><a href="#3-exception-trong-thread">3. Exception trong thread</a></p>
+</li>
+<li>
+<p><a href="#4-ki%E1%BB%83m-so%C3%A1t-thread">4. Kiểm soát thread</a></p>
+</li>
+</ul>
+</li>
+<li>
+<p><a href="#iii-l%C3%A0m-vi%E1%BB%87c-%E1%BB%9F-c%E1%BA%A5p-%C4%91%E1%BB%99-process">III. Làm việc ở cấp độ Process</a></p>
+<ul>
+<li><a href="#1-sinh-ra-m%E1%BB%99t-process-m%E1%BB%9Bi">1. Sinh ra một process mới</a></li>
+<li><a href="#2-process-con-ch%E1%BA%A1y-%C4%91%E1%BB%99c-l%E1%BA%ADp">2. Process con chạy độc lập</a></li>
+<li><a href="#3-block-code-v%C3%A0-subprocesses">3. Block code và Subprocesses</a></li>
+</ul>
+</li>
+<li>
+<p><a href="#iv-fiber-l%C3%A0-m%E1%BB%99t-lightweight-thread">IV. Fiber là một lightweight thread?</a></p>
+</li>
+<li>
+<p><a href="#v-hi%E1%BB%83u-v%E1%BB%81-ractor">V. Hiểu về Ractor</a></p>
+<ul>
+<li><a href="#1-c%C3%A1ch-ractor-ho%E1%BA%A1t-%C4%91%E1%BB%99ng">1. Cách Ractor hoạt động</a></li>
+<li><a href="#2-truy%E1%BB%81n-variable-v%C3%A0o-ractor">2. Truyền Variable vào Ractor</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<h2 id="i-giới-thiệu-về-đa-tác-vụ---đa-nhiệm-trong-ruby" style="position:relative;"><a href="#i-gi%E1%BB%9Bi-thi%E1%BB%87u-v%E1%BB%81-%C4%91a-t%C3%A1c-v%E1%BB%A5---%C4%91a-nhi%E1%BB%87m-trong-ruby" aria-label="i giới thiệu về đa tác vụ   đa nhiệm trong ruby permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>I. Giới thiệu về đa tác vụ - đa nhiệm trong Ruby</h2>
+<p>Việc làm nhiều việc cùng lúc luôn luôn là một điều hữu ích. Trong lập trình, multitasking thường ám chỉ đến việc khi chương trình đang thực hiện task A thì thay vì phải đợi task A làm xong (ví dụ như các task gọi API, tương tác với database, IO …) thì ta có thể chuyển qua làm task B trong khi chờ đợi task A xong. Có thể thực hiện multitask thì cũng có nghĩa computer có nhiều hơn 1 CPU, chương trình có thể chia các task vào các CPU khác nhau.</p>
+<p>Tuy nhiên việc lập trình để làm đa tác vụ trong cùng lúc cũng khá phức tạp. Task B có thể thay đổi data, resource mà task A đang làm việc trên đó (hoặc ngược lại) dẫn đến xung đột và kết quả cuối cùng không còn chính xác. Ta nên cẩn trọng và tính toán cụ thể khi lập trình multitasking.</p>
+<p>Khi một chương trình làm nhiều thứ cùng lúc, mỗi “thứ” khác nhau là một <em><strong>thread</strong></em> và phải đảm báo những “thread” này chạy chính xác, không ảnh hưởng đến nhau bất kể thứ tự trước sau ta gọi đó là <em><strong>thread safety</strong></em>. Nếu 2 threads chạy ảnh hưởng lên nhau (ví dụ 2 threads cùng viết vào 1 text file, thread cuối cùng overwrite thread trước) đây được gọi là <em><strong>race condition</strong></em> và ta luôn tránh trường hợp này xảy ra trong multitasking.</p>
+<p>Điều cốt yếu để đạt được <em><strong>thread safety</strong></em> là tránh việc data/state được chia sẽ giữa các threads, đặc biệt là khi data/state được thay đổi bởi một thread mà những thread khác không biết được. Trong trường hợp bắt buộc phải chia sẽ data/state thì ta nên có các biện pháp hạn chế, cấu trúc phù hợp để chỉ có 1 thread được truy cập tại một thời điểm.</p>
+<p>Trước kia, các chương trình Ruby dùng GIL (Global Interpreter Lock), thứ này đảm bảo chỉ có 1 thread (ở cấp độ hệ điều hành, ta cần phân biệt rõ thread ở cấp hệ điều hành và thread ở cấp logic/abstraction) có để được chạy tại bất kỳ thời điểm nào, nhưng từ Ruby 3.1 có một cấu trúc mới cho phép chúng ta chạy nhiều threads (ở cấp độ hệ điều hành) gọi là <strong>Ractors</strong>, chúng ta sẽ tìm hiểu thêm ở phần sau.</p>
+<p>GIL giúp Ruby đạt được một số ưu điểm:</p>
+<ul>
+<li>Thread safety - Chỉ có 1 thread hoạt động tại một thời điểm</li>
+<li>Khi một thread bị block thì thread khác sẽ hoạt động</li>
+</ul>
+<p>Nhưng nó cũng có nhược điểm là:</p>
+<ul>
+<li>Không thể thực hiện multiple parallel CPUs với một Ruby interpreter đơn lẻ (nếu ko sử dụng <strong>Ractor</strong>)</li>
+</ul>
+<p>==========</p>
+<p>Trong bài hôm nay chúng ta sẽ tìm hiểu về cách Ruby Thread Abstraction (<strong>Thread</strong> ở cấp độ ngôn ngữ, ko phải cấp hệ điều hành) cho phép chúng ta chạy nhiều thứ khác nhau và có vẻ như chúng sẽ được chạy trong “cùng thời điểm”. Ta cũng biết cách để tạo ra các process (cấp hệ điều hành).</p>
+<p>Một loại “thread abstraction” khác nữa là <strong>Fibers</strong> giúp ta tạm dừng một phần chương trình để chạy phần khác của chương trình.</p>
+<p>Cuối cùng là <strong>Ractors</strong> cho phép chúng ta lách qua GIL và có “multithreading thực sự” với Ruby (multitasking trên multiple CPUS).</p>
+<h2 id="ii-multithreading-với-thread" style="position:relative;"><a href="#ii-multithreading-v%E1%BB%9Bi-thread" aria-label="ii multithreading với thread permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>II. Multithreading với Thread</h2>
+<p>Level thấp nhất trong Ruby để làm hai việc cùng lúc là sử dụng <strong>Thread</strong> class.</p>
+<p>Mặc dù threads có thể tận dụng multiple processors/cores (về mặt lý thuyết) trong một CPU, nhưng có một điểm cần lưu ý chính. Nhiều Ruby extension libraries không đảm bảo “thread safe”, bởi vì chúng mong đợi GIL sẽ đảm nhiệm bảo đảm “thread safe” cho chúng. Vậy nên, Ruby <strong>có</strong> sử dụng native operating system threads (threads ở cấp hệ điều hành) nhưng chỉ vận hành 1 thread tại 1 thời điểm.</p>
+<p>Trừ khi sử dụng Ractor library, nếu không chúng ta sẽ không bao giờ thấy 2 threads trong cùng app chạy “đồng thời thực sự”. Kịch bản phổ biến nhất sẽ là 1 thread bận rộn xử lý Ruby code trong khi 1 thread khác đợi các tác vụ I/O.</p>
+<h3 id="1-tạo-và-tương-tác-với-thread" style="position:relative;"><a href="#1-t%E1%BA%A1o-v%C3%A0-t%C6%B0%C6%A1ng-t%C3%A1c-v%E1%BB%9Bi-thread" aria-label="1 tạo và tương tác với thread permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>1. Tạo và tương tác với thread</h3>
+<h4 id="a-tạo-thread" style="position:relative;"><a href="#a-t%E1%BA%A1o-thread" aria-label="a tạo thread permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>a. Tạo thread</h4>
+<p>Dưới đây là một ví dụ đơn giản về việc download các trang webs một cách song song (parallel). Việc download mỗi trang web sẽ được 1 thread riêng lo liệu.</p>
+<blockquote>
+<p>Code:</p>
+</blockquote>
+<div class="gatsby-highlight" data-language="ruby"><pre class="language-ruby"><code class="language-ruby"><span class="token keyword">require</span> <span class="token string-literal"><span class="token string">"net/http"</span></span>
+pages <span class="token operator">=</span> <span class="token string-literal"><span class="token string">%w[www.rubycentral.org www.pragprog.com www.google.com]</span></span>
+threads <span class="token operator">=</span> pages<span class="token punctuation">.</span>map <span class="token keyword">do</span> <span class="token operator">|</span>page_to_fetch<span class="token operator">|</span>
+  <span class="token class-name">Thread</span><span class="token punctuation">.</span><span class="token keyword">new</span><span class="token punctuation">(</span>page_to_fetch<span class="token punctuation">)</span> <span class="token keyword">do</span> <span class="token operator">|</span>url<span class="token operator">|</span>
+    http <span class="token operator">=</span> Net<span class="token double-colon punctuation">::</span><span class="token class-name">HTTP</span><span class="token punctuation">.</span><span class="token keyword">new</span><span class="token punctuation">(</span>url<span class="token punctuation">,</span> <span class="token number">80</span><span class="token punctuation">)</span>
+    print <span class="token string-literal"><span class="token string">"Fetching: </span><span class="token interpolation"><span class="token delimiter punctuation">#{</span><span class="token content">url</span><span class="token delimiter punctuation">}</span></span><span class="token string">\n"</span></span>
+    response <span class="token operator">=</span> http<span class="token punctuation">.</span>get<span class="token punctuation">(</span><span class="token string-literal"><span class="token string">"/"</span></span><span class="token punctuation">)</span>
+    print <span class="token string-literal"><span class="token string">"Got </span><span class="token interpolation"><span class="token delimiter punctuation">#{</span><span class="token content">url</span><span class="token delimiter punctuation">}</span></span><span class="token string">: </span><span class="token interpolation"><span class="token delimiter punctuation">#{</span><span class="token content">response<span class="token punctuation">.</span>message</span><span class="token delimiter punctuation">}</span></span><span class="token string">\n"</span></span>
+  <span class="token keyword">end</span>
+<span class="token keyword">end</span>
+threads<span class="token punctuation">.</span><span class="token keyword">each</span> <span class="token punctuation">{</span> <span class="token operator">|</span>thread<span class="token operator">|</span> thread<span class="token punctuation">.</span>join <span class="token punctuation">}</span>
+print <span class="token string-literal"><span class="token string">"We're done here!"</span></span></code></pre></div>
+<blockquote>
+<p>Output:</p>
+</blockquote>
+<div class="gatsby-highlight" data-language="text"><pre class="language-text"><code class="language-text">Fetching: www.rubycentral.org
+Fetching: www.pragprog.com
+Fetching: www.google.com
+Got www.google.com: OK
+Got www.pragprog.com: Moved Permanently
+Got www.rubycentral.org: OK
+We're done here</code></pre></div>
+<p>Như các bạn thấy các new threads được tạo bằng cách gọi <code class="language-text">Thread.new</code>.</p>
+<p><code class="language-text">Thread.new</code> sẽ nhận 1 <strong>block</strong> chứa code để được chạy trong thread mới. Trong ví dụ trên thì block sử dụng thư viện net/http để fetch trang web dựa trên URL được pass vào thread.</p>
+<p>Một khi thread được tạo, nó sẽ được xếp lịch để thực thi bởi hệ điều hành, và trong ví dụ này, chúng ta không có quyền kiểm soát khi nào thread sẽ chạy.</p>
+<p>Trong đoạn code này, chúng ta sử dụng <code class="language-text">map</code> để tạo 3 threads mới và lưu vào một array. <code class="language-text">Threads</code>, như mọi thứ khác trong Ruby đều là objects vậy nên ta có thể assign vào variable, return từ block/method và truyền như một parameter.</p>
+<p>Bây giờ hãy nhìn kỹ hơn cách các threads hoạt động:</p>
+<ul>
+<li>Chúng ta fetch 3 trang web bằng 3 threads khác nhau, nhìn kỹ output ta sẽ thấy 3 “Fetch” sẽ chạy trước bất cứ “Got” nào. Tại sao 3 “Fetch” lại được in ra trước sẽ được giải thích ở bên dưới.</li>
+<li>ở chương trình chính khi thread đầu tiên được tạo ra, được lên lịch để thực thi, khi thực thi nó sẽ gọi HTTP request và bị block trong khi chờ response khi gọi HTTP request -> khi bị xác nhận là block (hệ điều hành/GIL tự xác định) thì sẽ quay lại chương trình chính và ngay lập tực tạo tiếp thread mới và cứ tiếp tục.</li>
+<li>Việc tạo ra thread sẽ nhanh hơn rất rất nhiều so với việc đợi response từ một HTTP request nên dẫn đến cả 3 threads này được tạo xong thì thread đầu tiên được tạo vẫn chưa nhận được response => 3 “Fetch” được in ra trước 3 “Got”</li>
+</ul>
+<p>Trong ví dụ code trên chúng ta tạo thread và truyền URL như là một parameter vào block, tại sao chúng ta lại truyền URL vào trong khi chúng ta đã có biến <code class="language-text">page_to_fetch</code> ở bên ngoài block ? Câu trả lời liên quan tới “thread safety” và cách các threads chia sẽ values.</p>
+<p>Một thread chia sẽ tất cả global/instance/local variables đã tồn tại và available tại thời điểm thread được tạo. Nhưng việc chia sẽ không phải lúc nào cũng tốt. Trong ví dụ của chúng ta, <code class="language-text">page_to_fetch</code> variable được chia sẽ tới 3 threads</p>
+<ul>
+<li>Đối với thread đầu, ban đầu <code class="language-text">page_to_fetch</code> sẽ bằng ”<a href="http://www.rubycentral.org">www.rubycentral.org</a>” nhưng vòng loop vấn tiếp tục chạy</li>
+<li>Ở loop thứ 2 <code class="language-text">page_to_fetch</code> được cập nhật thành “pragprog.com”, lúc này có thể thread đầu vẫn chưa hoàn tất việc sử dụng biến <code class="language-text">page_to_fetch</code> và nếu nó sử dụng thì nó sẽ sử dụng giá trị mới. Những lỗi kiểu này bắt buộc phải tránh vì rất khó để tìm ra.</li>
+<li>Vậy nên việc sử dụng local variables được tạo ở mỗi thread sẽ đảm bảo “thread safety” hơn, bằng cách pass value trực vào block và sử dụng để tạo biến local ở mỗi thread.</li>
+</ul>
+<h4 id="b-tương-tác-với-thread" style="position:relative;"><a href="#b-t%C6%B0%C6%A1ng-t%C3%A1c-v%E1%BB%9Bi-thread" aria-label="b tương tác với thread permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>b. Tương tác với Thread</h4>
+<p>Thông thường khi một Ruby program bị terminate (process tương ứng bị terminate), tất cả các threads đều bị kill, bất kể state của các threads này là gì. Nếu chúng ta không có logic để handle phần này thì dễ có tình trạng khi Ruby program kết thúc khi 1 hoặc nhiều threads vẫn còn đang xử lý và phần xử lý này sẽ không bao giờ hoàn tất.</p>
+<p>Tất nhiên cũng ta có thể đợi 1 Ruby thread nào đó cho đến khi nó hoàn thành xử lý bằng cách gọi method <code class="language-text">join</code>. Thread nơi gọi method <code class="language-text">join</code> cho các thread khác, trong ví dụ trên là main thread (chương trình ban đầu chạy) sẽ bị block cho tới nhận được tín hiệu hoàn thành từ các thread kia.</p>
+<p>Bằng cách gọi <code class="language-text">join</code> trên mỗi sub thread ta sẽ đảm bảo được các sub thread sẽ hoàn thành rồi mới terminate chương trình chính chạy bởi main thread.</p>
+<p>Một vài method quen thuộc khác khi làm việc với thread là sẽ được liệt kê dưới đây:</p>
+<ul>
+<li><code class="language-text">Thread.current</code> - truy cập tới thread hiện tại đang thực thi logic</li>
+<li><code class="language-text">Thread.list</code> - trả về danh sách các threads objects có thể chạy hoặc bị đã bị dừng.</li>
+<li>Sử dụng <code class="language-text">exit</code> hoặc <code class="language-text">kill</code> để dừng và terminate một thread ( <code class="language-text">thread.kill()</code> )</li>
+<li>Check <code class="language-text">status</code> hoặc <code class="language-text">alive?</code> để kiểm tra trạng thái của một Ruby thread
+<ul>
+<li>status <strong>run</strong> - Thread đang được thực thi bình thường</li>
+<li>status <strong>sleep</strong> - Thread đang bị tạm dừng hoặc blocked</li>
+<li>status <strong>aborting</strong> - Thread đang bị kill</li>
+<li>nếu thread kết thúc bình thường sẽ trả về <strong>false</strong>, nếu bị terminate mà không lường trước được thì sẽ trả về <strong>nil</strong>.</li>
+<li><code class="language-text">alive?</code> trả về true nếu status là <strong>run</strong> hoặc <strong>sleep</strong></li>
+</ul>
+</li>
+<li>Ta cũng có thể đặt ưu tiên cho một thread bằng cách set priority dùng method <code class="language-text">priority=</code>, priority cao sẽ được ưu tiên chạy trước (lưu ý OS có thể phớt lờ setting này =))</li>
+</ul>
+<h3 id="2-sử-dụng-variables-trong-thread" style="position:relative;"><a href="#2-s%E1%BB%AD-d%E1%BB%A5ng-variables-trong-thread" aria-label="2 sử dụng variables trong thread permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>2. Sử dụng variables trong thread</h3>
+<p>Một thread có thể thoải mái sử dụng tất các các biến “trong scope nơi thread được tạo”. Những biến được tạo trong thread block code là những local variables của thread đó (thread-local variable) và sẽ không chia sẽ cho các các thread khác.</p>
+<p>Nhưng nếu ta muốn chia sẽ local variable của một thread cho các thread khác thì sao? class <code class="language-text">Thread</code> có một công cụ cho phép các thread-local variables được tạo và truy cập bằng tên.</p>
+<p>Hãy xem 1 thread object là một Hash, chúng ta sẽ gán biến cho một thread bằng <code class="language-text">[]=</code> và truy cập bằng <code class="language-text">[]</code>. Ngoài ra ra có thể get và set các thread-local variable bằng method <code class="language-text">Thread.thread_variable_get</code> và <code class="language-text">Thread.thread_variable_set</code>.</p>
+<p>Để có một cái nhìn cụ thể hơn ta hãy xem qua ví dụ bên dưới</p>
+<blockquote>
+<p>Code:</p>
+</blockquote>
+<div class="gatsby-highlight" data-language="ruby"><pre class="language-ruby"><code class="language-ruby">count <span class="token operator">=</span> <span class="token number">0</span>
+threads <span class="token operator">=</span> <span class="token number">10.</span>times<span class="token punctuation">.</span>map <span class="token keyword">do</span> <span class="token operator">|</span>i<span class="token operator">|</span>
+  <span class="token class-name">Thread</span><span class="token punctuation">.</span><span class="token keyword">new</span> <span class="token keyword">do</span>
+    sleep<span class="token punctuation">(</span>rand<span class="token punctuation">(</span><span class="token number">0.1</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+    <span class="token builtin">Thread</span><span class="token punctuation">.</span>current<span class="token punctuation">[</span><span class="token symbol">:my_count</span><span class="token punctuation">]</span> <span class="token operator">=</span> count <span class="token comment"># gán biến my_count cho thread đang làm việc</span>
+    count <span class="token operator">+=</span> <span class="token number">1</span>
+  <span class="token keyword">end</span>
+<span class="token keyword">end</span>
+
+threads<span class="token punctuation">.</span><span class="token keyword">each</span> <span class="token keyword">do</span> <span class="token operator">|</span>t<span class="token operator">|</span>
+  t<span class="token punctuation">.</span>join
+  print t<span class="token punctuation">[</span><span class="token symbol">:my_count</span><span class="token punctuation">]</span><span class="token punctuation">,</span> <span class="token string-literal"><span class="token string">","</span></span>  <span class="token comment"># In ra gía trị của biến my_count của thread đang làm việc</span>
+<span class="token keyword">end</span>
+
+puts <span class="token string-literal"><span class="token string">"count = </span><span class="token interpolation"><span class="token delimiter punctuation">#{</span><span class="token content">count</span><span class="token delimiter punctuation">}</span></span><span class="token string">"</span></span></code></pre></div>
+<blockquote>
+<p>Output:</p>
+</blockquote>
+<div class="gatsby-highlight" data-language="text"><pre class="language-text"><code class="language-text">8, 5, 7 , 1, 4, 9, 0, 3 , 6, 2, count = 10</code></pre></div>
+<p>Ở ví dụ này có tồn tại <code class="language-text">race condition</code>, đó là biến count có thể được cập nhật bởi bất kỳ thread nào. Do đó sẽ có trường hợp 2 hoặc nhiều thread hơn cập nhật giá trị tại 1 thời điểm dẫn tới kết quả không chính xác.</p>
+<p><code class="language-text">race condition</code> này có để được fix bằng cách synchronization thông qua Mutual Exclusion ở phần <strong>4. Kiểm soát thread</strong></p>
+<h3 id="3-exception-trong-thread" style="position:relative;"><a href="#3-exception-trong-thread" aria-label="3 exception trong thread permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>3. Exception trong thread</h3>
+<p>Nếu một thread raise một exception không biết trước (không có logic handle exception này), thì việc xảy ra tiếp theo phụ thuộc vào setting của <code class="language-text">Thread.abort_on_exception</code> flag và setting của interpreter <code class="language-text">$DEBUG</code> flag.</p>
+<p>Nếu <code class="language-text">abort_on_exception</code> là <strong>false</strong> và debug flag chưa được bật (default setting), một exception sẽ đơn giản là kill thread xảy ra exception - các phần khác vẫn chạy bình thường. Thực sự thì chúng ta sẽ không bao giờ nhận một thread exception trừ khi chúng ta dùng <code class="language-text">join</code> cho thread đó. Hãy xem ví vụ này bên dưới</p>
+<blockquote>
+<p>Code: Ví dụ raise exception không dùng join</p>
+</blockquote>
+<div class="gatsby-highlight" data-language="ruby"><pre class="language-ruby"><code class="language-ruby">threads <span class="token operator">=</span> <span class="token number">4.</span>times<span class="token punctuation">.</span>map <span class="token keyword">do</span> <span class="token operator">|</span>number<span class="token operator">|</span>
+  <span class="token class-name">Thread</span><span class="token punctuation">.</span><span class="token keyword">new</span><span class="token punctuation">(</span>number<span class="token punctuation">)</span> <span class="token keyword">do</span> <span class="token operator">|</span>i<span class="token operator">|</span>
+    <span class="token keyword">raise</span> <span class="token string-literal"><span class="token string">"Boom!"</span></span> <span class="token keyword">if</span> i <span class="token operator">==</span> <span class="token number">1</span>
+
+    p <span class="token string-literal"><span class="token string">"</span><span class="token interpolation"><span class="token delimiter punctuation">#{</span><span class="token content">i</span><span class="token delimiter punctuation">}</span></span><span class="token string">"</span></span>
+  <span class="token keyword">end</span>
+<span class="token keyword">end</span>
+
+pust <span class="token string-literal"><span class="token string">"Waiting"</span></span>
+sleep <span class="token number">0.1</span>
+puts <span class="token string-literal"><span class="token string">"Done"</span></span></code></pre></div>
+<blockquote>
+<p>Output:</p>
+</blockquote>
+<div class="gatsby-highlight" data-language="text"><pre class="language-text"><code class="language-text">#&lt;Thread:0x00000010d6330 prog.rb:2 run> terminated with exception
+(report_on_exception is true)
+prog.rb:3:in `block (2 levels) in &lt;main>`: Boom! (RuntimeError)
+Waiting
+0
+2
+3
+Done</code></pre></div>
+<p>Thông thường chúng ta không sleep main thread để chờ các threads terminate mà chúng ta gọi join cho các threads này. If sử dụng join cho cho một thread raise exception thì exception đó sẽ được raise ở chính main thread thực hiện việc joining. Ví dụ sẽ được cập nhật một chút</p>
+<blockquote>
+<p>Code: Ví dụ raise exception có dùng join</p>
+</blockquote>
+<div class="gatsby-highlight" data-language="ruby"><pre class="language-ruby"><code class="language-ruby">threads <span class="token operator">=</span> <span class="token number">4.</span>times<span class="token punctuation">.</span>map <span class="token keyword">do</span> <span class="token operator">|</span>number<span class="token operator">|</span>
+  <span class="token class-name">Thread</span><span class="token punctuation">.</span><span class="token keyword">new</span><span class="token punctuation">(</span>number<span class="token punctuation">)</span> <span class="token keyword">do</span> <span class="token operator">|</span>i<span class="token operator">|</span>
+    <span class="token keyword">raise</span> <span class="token string-literal"><span class="token string">"Boom!"</span></span> <span class="token keyword">if</span> i <span class="token operator">==</span> <span class="token number">1</span>
+    print <span class="token string-literal"><span class="token string">"</span><span class="token interpolation"><span class="token delimiter punctuation">#{</span><span class="token content">i</span><span class="token delimiter punctuation">}</span></span><span class="token string">\n"</span></span>
+  <span class="token keyword">end</span>
+<span class="token keyword">end</span>
+
+puts <span class="token string-literal"><span class="token string">"Waiting"</span></span>
+threads<span class="token punctuation">.</span><span class="token keyword">each</span> <span class="token keyword">do</span> <span class="token operator">|</span>t<span class="token operator">|</span>
+  <span class="token keyword">begin</span>
+    t<span class="token punctuation">.</span>join
+  <span class="token keyword">rescue</span> RuntimeError <span class="token operator">=></span> e
+    puts <span class="token string-literal"><span class="token string">"Failed: </span><span class="token interpolation"><span class="token delimiter punctuation">#{</span><span class="token content">e<span class="token punctuation">.</span>message</span><span class="token delimiter punctuation">}</span></span><span class="token string">"</span></span>
+  <span class="token keyword">end</span>
+<span class="token keyword">end</span>
+puts <span class="token string-literal"><span class="token string">"Done"</span></span></code></pre></div>
+<blockquote>
+<p>Output</p>
+</blockquote>
+<div class="gatsby-highlight" data-language="text"><pre class="language-text"><code class="language-text">#&lt;Thread:0x0000000104591d48 prog.rb:2 run> terminated with exception
+(report_on_exception is true):
+prog.rb:3:in `block (2 levels) in &lt;main>': Boom! (RuntimeError)
+Waiting
+0
+Failed: Boom!
+2
+3
+Done</code></pre></div>
+<p><strong>Lưu ý</strong> nếu chúng ra set <code class="language-text">abort_on_exception</code> là true hoặc sử dụng -d để bật Debug flag thì một exception trong thread sẽ kill main thread và message “Done” sẽ không bao giờ hiện ra.</p>
+<div class="gatsby-highlight" data-language="ruby"><pre class="language-ruby"><code class="language-ruby"><span class="token builtin">Thread</span><span class="token punctuation">.</span>abort_on_exception <span class="token operator">=</span> <span class="token boolean">true</span>
+<span class="token comment"># ... the rest code</span></code></pre></div>
+<h3 id="4-kiểm-soát-thread" style="position:relative;"><a href="#4-ki%E1%BB%83m-so%C3%A1t-thread" aria-label="4 kiểm soát thread permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>4. Kiểm soát thread</h3>
+<p>Thông thường, tốt nhất là cứ để thread tự làm việc, việc lên lịch sắp xếp khi nào thread làm việc được thực thi tự động bới <code class="language-text">Thread Scheduler</code>.
+Tuy nhiên ta vẫn được cung cấp một số method để kiểm soát hoặc dẫn đường cho Thread Scheduler như:</p>
+<ul>
+<li><code class="language-text">stop</code> - Dừng current thread</li>
+<li><code class="language-text">run</code> - chạy 1 thread nào đó</li>
+<li><code class="language-text">pass</code> - đưa current thread khỏi schedule để cho thread khác chạy</li>
+<li><code class="language-text">join</code> và <code class="language-text">value</code> - đây là 2 methods được sử dụng phổ biến và nó có tác dụng ở cho low-level thread (cấp hệ điều hành), sẽ dừng thread gọi cho tới khi các threads được gọi hoàn thành.</li>
+</ul>
+<p>Ngoài việc tương các ở mức độ low-level thread thì ta vẫn có thể thể tương tác ở mức độ higher-level thread. Hãy đi tới ví dụ bên dưới.</p>
+<blockquote>
+<p>Ví dụ 1: demo về race condition, cập nhật chung trên 1 biến</p>
+</blockquote>
+<div class="gatsby-highlight" data-language="ruby"><pre class="language-ruby"><code class="language-ruby">sum <span class="token operator">=</span> <span class="token number">0</span>
+threads <span class="token operator">=</span> <span class="token number">10.</span>times<span class="token punctuation">.</span>map <span class="token keyword">do</span>
+  <span class="token class-name">Thread</span><span class="token punctuation">.</span><span class="token keyword">new</span> <span class="token keyword">do</span>
+    <span class="token number">100</span>_000<span class="token punctuation">.</span>times <span class="token keyword">do</span>
+      new_value <span class="token operator">=</span> sum <span class="token operator">+</span> <span class="token number">1</span>
+      puts <span class="token string-literal"><span class="token string">"</span><span class="token interpolation"><span class="token delimiter punctuation">#{</span><span class="token content">new_value</span><span class="token delimiter punctuation">}</span></span><span class="token string">"</span></span> <span class="token keyword">if</span> new_value <span class="token operator">%</span> <span class="token number">200</span>_000 <span class="token operator">==</span> <span class="token number">0</span>
+      sum <span class="token operator">=</span> new_value
+    <span class="token keyword">end</span>
+  <span class="token keyword">end</span>
+<span class="token keyword">end</span>
+
+threads<span class="token punctuation">.</span><span class="token keyword">each</span><span class="token punctuation">(</span><span class="token operator">&amp;</span><span class="token symbol">:join</span><span class="token punctuation">)</span>
+puts <span class="token string-literal"><span class="token string">"\n sum = </span><span class="token interpolation"><span class="token delimiter punctuation">#{</span><span class="token content">sum</span><span class="token delimiter punctuation">}</span></span><span class="token string">"</span></span></code></pre></div>
+<blockquote>
+<p>Output</p>
+</blockquote>
+<div class="gatsby-highlight" data-language="bash"><pre class="language-bash"><code class="language-bash"><span class="token number">200000</span>
+<span class="token number">400000</span>
+<span class="token number">600000</span>
+<span class="token number">800000</span>
+<span class="token number">800000</span>
+<span class="token function">sum</span> <span class="token operator">=</span> <span class="token number">899999</span></code></pre></div>
+<p>Ở ví dụ này ta có 10 threads, mỗi thread sẽ cộng dồn vào <code class="language-text">sum</code> giá trị 100,000. Khi các threads hoàn thành nếu giá trị sum cuối cùng có giá trị dưới 1,000,000 nghĩa là có race condition xảy ra (sẽ xảy ra khi 1 thread ghi đè giá trị lên sum khi 1 thread đang chờ print - print là IO action)</p>
+<p>Ta có thể tránh race condition ở ví dụ trên dễ dàng bằng cách sử dụng built-in class <code class="language-text">Mutex</code> (viết tắt của “mutually exclusive”) để tạo 1 synced region - nơi mà đoạn code ở vùng này chỉ có thể được chạy bởi 1 thread tại 1 thời điểm. Nó giống như 1 toalet công cộng, mọi người đều có thể sử dụng, đôi khi ta phải xếp hàng chờ, nhưng tại một thời điểm luôn toalet sẽ bị khóa để chỉ có một người có thể sử dụng :)</p>
+<blockquote>
+<p>Ví dụ 2: cập nhật áp dụng Mutex: lock - do something - unlock</p>
+</blockquote>
+<div class="gatsby-highlight" data-language="ruby"><pre class="language-ruby"><code class="language-ruby">sum <span class="token operator">=</span> <span class="token number">0</span>
+mutex <span class="token operator">=</span> <span class="token builtin">Thread</span><span class="token double-colon punctuation">::</span><span class="token class-name">Mutex</span><span class="token punctuation">.</span><span class="token keyword">new</span>
+threads <span class="token operator">=</span> <span class="token number">10.</span>times<span class="token punctuation">.</span>map <span class="token keyword">do</span>
+  <span class="token class-name">Thread</span><span class="token punctuation">.</span><span class="token keyword">new</span> <span class="token keyword">do</span>
+    <span class="token number">100</span>_000<span class="token punctuation">.</span>times <span class="token keyword">do</span>
+      mutex<span class="token punctuation">.</span>lock               <span class="token comment">## Tại một thời điểm thì khóa lại cho 1 thread sử dụng</span>
+      new_value <span class="token operator">=</span> sum <span class="token operator">+</span> <span class="token number">1</span>      <span class="token comment">#</span>
+      puts <span class="token string-literal"><span class="token string">"</span><span class="token interpolation"><span class="token delimiter punctuation">#{</span><span class="token content">new_value</span><span class="token delimiter punctuation">}</span></span><span class="token string">"</span></span> <span class="token keyword">if</span> new_value <span class="token operator">%</span> <span class="token number">200</span>_000 <span class="token operator">==</span> <span class="token number">0</span>
+      sum <span class="token operator">=</span> new_value          <span class="token comment">#</span>
+      mutex<span class="token punctuation">.</span>unlock             <span class="token comment">##</span>
+    <span class="token keyword">end</span>
+  <span class="token keyword">end</span>
+<span class="token keyword">end</span>
+threads<span class="token punctuation">.</span><span class="token keyword">each</span><span class="token punctuation">(</span><span class="token operator">&amp;</span><span class="token symbol">:join</span><span class="token punctuation">)</span>
+puts <span class="token string-literal"><span class="token string">"\nsum = </span><span class="token interpolation"><span class="token delimiter punctuation">#{</span><span class="token content">sum</span><span class="token delimiter punctuation">}</span></span><span class="token string">"</span></span></code></pre></div>
+<blockquote>
+<p>Output</p>
+</blockquote>
+<div class="gatsby-highlight" data-language="bash"><pre class="language-bash"><code class="language-bash"><span class="token number">200000</span>
+<span class="token number">400000</span>
+<span class="token number">600000</span>
+<span class="token number">800000</span>
+<span class="token number">1000000</span>
+<span class="token function">sum</span> <span class="token operator">=</span> <span class="token number">1000000</span></code></pre></div>
+<p>Với pattern lock - do something - unlock, ta có thể dùng một method cung cấp sẵn của <code class="language-text">Mutex</code> là <code class="language-text">synchronize</code>, method này còn đảm bảo mutex sẽ được unlocked nếu exception xảy ra. Nếu viết thủ công và không handle kỹ thì có thể khi exception xảy ra thì mutex sẽ không bao giờ được unlocked và các threads khác sẽ không bao giờ sử dụng được.</p>
+<blockquote>
+<p>Ví dụ 3: cập nhật dùng Mutex.synchronize</p>
+</blockquote>
+<div class="gatsby-highlight" data-language="ruby"><pre class="language-ruby"><code class="language-ruby">sum <span class="token operator">=</span> <span class="token number">0</span>
+mutex <span class="token operator">=</span> <span class="token builtin">Thread</span><span class="token double-colon punctuation">::</span><span class="token class-name">Mutex</span><span class="token punctuation">.</span><span class="token keyword">new</span>
+threads <span class="token operator">=</span> <span class="token number">10.</span>times<span class="token punctuation">.</span>map <span class="token keyword">do</span>
+  <span class="token class-name">Thread</span><span class="token punctuation">.</span><span class="token keyword">new</span> <span class="token keyword">do</span>
+    <span class="token number">100</span>_000<span class="token punctuation">.</span>times <span class="token keyword">do</span>
+      mutex<span class="token punctuation">.</span>synchronize <span class="token keyword">do</span>       <span class="token comment">## Tại một thời điểm thì khóa lại cho 1 thread sử dụng</span>
+        new_value <span class="token operator">=</span> sum <span class="token operator">+</span> <span class="token number">1</span>      <span class="token comment">#</span>
+        puts <span class="token string-literal"><span class="token string">"</span><span class="token interpolation"><span class="token delimiter punctuation">#{</span><span class="token content">new_value</span><span class="token delimiter punctuation">}</span></span><span class="token string">"</span></span> <span class="token keyword">if</span> new_value <span class="token operator">%</span> <span class="token number">250</span>_000 <span class="token operator">==</span> <span class="token number">0</span>
+        sum <span class="token operator">=</span> new_value          <span class="token comment">#</span>
+      <span class="token keyword">end</span>                        <span class="token comment">#</span>
+    <span class="token keyword">end</span>
+  <span class="token keyword">end</span>
+<span class="token keyword">end</span>
+threads<span class="token punctuation">.</span><span class="token keyword">each</span><span class="token punctuation">(</span><span class="token operator">&amp;</span><span class="token symbol">:join</span><span class="token punctuation">)</span>
+puts <span class="token string-literal"><span class="token string">"\nsum = </span><span class="token interpolation"><span class="token delimiter punctuation">#{</span><span class="token content">sum</span><span class="token delimiter punctuation">}</span></span><span class="token string">"</span></span></code></pre></div>
+<blockquote>
+<p>Output</p>
+</blockquote>
+<div class="gatsby-highlight" data-language="bash"><pre class="language-bash"><code class="language-bash"><span class="token number">250000</span>
+<span class="token number">500000</span>
+<span class="token number">750000</span>
+<span class="token number">1000000</span>
+<span class="token function">sum</span> <span class="token operator">=</span> <span class="token number">1000000</span></code></pre></div>
+<p>===</p>
+<p>Chúng ta đã hiểu cách sử dụng Mutex ở các trường hợp đơn giản thông qua các ví dụ trên.
+Ngoài ra chúng ta còn có thể sử dụng một số method phổ biến khác như <code class="language-text">try_lock</code>, method này sẽ thử lock mutex nếu có thể trả về <strong>true</strong>, nếu ko lock được sẽ trả về <strong>false</strong>. Chúng ta sẽ đi qua thêm một ví dụ cho method này.</p>
+<blockquote>
+<p>Ví dụ sử dụng <code class="language-text">try_lock</code></p>
+</blockquote>
+<div class="gatsby-highlight" data-language="ruby"><pre class="language-ruby"><code class="language-ruby">rate_mutex <span class="token operator">=</span> <span class="token builtin">Thread</span><span class="token double-colon punctuation">::</span><span class="token class-name">Mutex</span><span class="token punctuation">.</span><span class="token keyword">new</span>
+exchange_rates <span class="token operator">=</span> <span class="token class-name">ExchangeRates</span><span class="token punctuation">.</span><span class="token keyword">new</span>
+exchange_rates<span class="token punctuation">.</span>update_from_online_feed
+
+<span class="token class-name">Thread</span><span class="token punctuation">.</span><span class="token keyword">new</span> <span class="token keyword">do</span>
+  loop <span class="token keyword">do</span>
+    sleep <span class="token number">3600</span>                                    <span class="token comment"># Cứ mỗi 1h thì thức dậy, lock lại và cập nhật exchange rate</span>
+    rate_mutex<span class="token punctuation">.</span>synchronize <span class="token keyword">do</span>                     <span class="token comment">#</span>
+      exchange_rates<span class="token punctuation">.</span>update_from_online_feed      <span class="token comment">#</span>
+    <span class="token keyword">end</span>                                           <span class="token comment">#</span>
+  <span class="token keyword">end</span>
+<span class="token keyword">end</span>
+
+loop <span class="token keyword">do</span>
+  puts <span class="token string-literal"><span class="token string">"Enter currency code and amount:"</span></span>
+  line <span class="token operator">=</span> gets
+
+  <span class="token keyword">if</span> rate_mutex<span class="token punctuation">.</span>try_lock                                              <span class="token comment"># Cố gắng thử lock để lấy quyền sử dụng exchange rate</span>
+    puts<span class="token punctuation">(</span>exchange_rates<span class="token punctuation">.</span>convert<span class="token punctuation">(</span>line<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token keyword">ensure</span> rate_mutex<span class="token punctuation">.</span>unlock       <span class="token comment"># Hiển thị rate, nếu có exception thì đảm bảo unlock</span>
+  <span class="token keyword">else</span>
+    puts <span class="token string-literal"><span class="token string">"Sorry, rates being updated. Try again in a minute"</span></span>
+  <span class="token keyword">end</span>
+<span class="token keyword">end</span></code></pre></div>
+<p>Trong trường hợp chúng ta đang giữ một lock của một mutex mà muốn unlock tạm thời (trong một khoảng thời gian) để cho phép những threads khác sử dụng, có có thể sử dụng <code class="language-text">Mutex#sleep</code></p>
+<blockquote>
+<p>Ví dụ sử dụng <code class="language-text">sleep</code></p>
+</blockquote>
+<div class="gatsby-highlight" data-language="ruby"><pre class="language-ruby"><code class="language-ruby">rate_mutex <span class="token operator">=</span> <span class="token builtin">Thread</span><span class="token double-colon punctuation">::</span><span class="token class-name">Mutex</span><span class="token punctuation">.</span><span class="token keyword">new</span>
+exchange_rates <span class="token operator">=</span> <span class="token class-name">ExchangeRates</span><span class="token punctuation">.</span><span class="token keyword">new</span>
+exchange_rates<span class="token punctuation">.</span>update_from_online_feed
+
+<span class="token class-name">Thread</span><span class="token punctuation">.</span><span class="token keyword">new</span> <span class="token keyword">do</span>
+  rate_mutex<span class="token punctuation">.</span>lock
+  loop <span class="token keyword">do</span>
+    rate_mutex<span class="token punctuation">.</span>sleep<span class="token punctuation">(</span><span class="token number">3600</span><span class="token punctuation">)</span>                                           <span class="token comment"># Tạm thời unlock resource trong 3600s sau đó sẽ lock lại</span>
+    exchange_rates<span class="token punctuation">.</span>update_from_online_feed
+  <span class="token keyword">end</span>
+<span class="token keyword">end</span>
+
+loop <span class="token keyword">do</span>
+  puts <span class="token string-literal"><span class="token string">"Enter currency code and amount:"</span></span>
+  line <span class="token operator">=</span> gets
+
+  <span class="token keyword">if</span> rate_mutex<span class="token punctuation">.</span>try_lock                                             <span class="token comment"># Cố gắng thử lock để lấy quyền sử dụng exchange rate</span>
+    puts<span class="token punctuation">(</span>exchange_rates<span class="token punctuation">.</span>convert<span class="token punctuation">(</span>line<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token keyword">ensure</span> rate_mutex<span class="token punctuation">.</span>unlock      <span class="token comment"># Hiển thị rate, nếu có exception thì đảm bảo unlock</span>
+  <span class="token keyword">else</span>
+    puts <span class="token string-literal"><span class="token string">"Sorry, rates being updated. Try again in a minute"</span></span>
+  <span class="token keyword">end</span>
+<span class="token keyword">end</span></code></pre></div>
+<h2 id="iii-làm-việc-ở-cấp-độ-process" style="position:relative;"><a href="#iii-l%C3%A0m-vi%E1%BB%87c-%E1%BB%9F-c%E1%BA%A5p-%C4%91%E1%BB%99-process" aria-label="iii làm việc ở cấp độ process permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>III. Làm việc ở cấp độ Process</h2>
+<p>Đôi khi chúng ta cần chia task ra và thực hiện ở một vài process khác nhau để có thể tận dụng ưu điểm của multiple cores/cpus hoặc chạy 1 process riêng ko được viết bằng Ruby (C++, Golang …)</p>
+<p>Ruby vẫn hỗ trợ cũng ta một số methods để sinh ra và quản lý các processes khác từ process chính.</p>
+<h3 id="1-sinh-ra-một-process-mới" style="position:relative;"><a href="#1-sinh-ra-m%E1%BB%99t-process-m%E1%BB%9Bi" aria-label="1 sinh ra một process mới permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>1. Sinh ra một process mới</h3>
+<h3 id="2-process-con-chạy-độc-lập" style="position:relative;"><a href="#2-process-con-ch%E1%BA%A1y-%C4%91%E1%BB%99c-l%E1%BA%ADp" aria-label="2 process con chạy độc lập permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>2. Process con chạy độc lập</h3>
+<h3 id="3-block-code-và-subprocesses" style="position:relative;"><a href="#3-block-code-v%C3%A0-subprocesses" aria-label="3 block code và subprocesses permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>3. Block code và Subprocesses</h3>
+<h2 id="iv-fiber-là-một-lightweight-thread" style="position:relative;"><a href="#iv-fiber-l%C3%A0-m%E1%BB%99t-lightweight-thread" aria-label="iv fiber là một lightweight thread permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>IV. Fiber là một lightweight thread?</h2>
+<p>Cái tên Fiber khiến mọi người có thể nhầm lẫn và xem nó như 1 loại “lightweight-thread” của Ruby, nhưng bản chất Ruby Fiber là một code block chứ không phải một thread, điều đặc biệt là “block of code” này có thể stop và restart có thể xem nó là <strong>coroutine</strong>.</p>
+<p>Fibers trong Ruby được sử dụng cho “cooperatively multitasking”, mỗi fiber sẽ giải quyết một phần công việc bằng cách phối hợp, tương tác với fibers hoặc code khác, khác với thread thường ưu tiên để làm các công việc song song ko ràng buộc nhau, một điều khác biệt rõ ràng nữa của Fiber so với Thread là chính chúng ra phải control việc chạy các fibers này thay vì để OS (hệ điều hành quyết định) như thread.</p>
+<p><strong>Fiber không chạy ngay lập tức khi được tạo, sẽ hoạt động kiểu dừng - chạy - dừng</strong></p>
+<blockquote>
+<p>Ví dụ: Đếm số lần xuất hiện của các từ</p>
+</blockquote>
+<div class="gatsby-highlight" data-language="ruby"><pre class="language-ruby"><code class="language-ruby">counts <span class="token operator">=</span> <span class="token class-name">Hash</span><span class="token punctuation">.</span><span class="token keyword">new</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span>
+<span class="token builtin">File</span><span class="token punctuation">.</span>foreach<span class="token punctuation">(</span><span class="token string-literal"><span class="token string">"./testfile"</span></span><span class="token punctuation">)</span> <span class="token keyword">do</span> <span class="token operator">|</span>line<span class="token operator">|</span>
+  line<span class="token punctuation">.</span>scan<span class="token punctuation">(</span><span class="token regex-literal"><span class="token regex">/\w+/</span></span><span class="token punctuation">)</span> <span class="token keyword">do</span> <span class="token operator">|</span>word<span class="token operator">|</span>
+    word <span class="token operator">=</span> word<span class="token punctuation">.</span>downcase
+    counts<span class="token punctuation">[</span>word<span class="token punctuation">]</span> <span class="token operator">+=</span> <span class="token number">1</span>
+  <span class="token keyword">end</span>
+<span class="token keyword">end</span>
+counts<span class="token punctuation">.</span>keys<span class="token punctuation">.</span>sort<span class="token punctuation">.</span><span class="token keyword">each</span> <span class="token punctuation">{</span> <span class="token operator">|</span>k<span class="token operator">|</span> print <span class="token string-literal"><span class="token string">"</span><span class="token interpolation"><span class="token delimiter punctuation">#{</span><span class="token content">k</span><span class="token delimiter punctuation">}</span></span><span class="token string">:</span><span class="token interpolation"><span class="token delimiter punctuation">#{</span><span class="token content">counts<span class="token punctuation">[</span>k<span class="token punctuation">]</span></span><span class="token delimiter punctuation">}</span></span><span class="token string"> "</span></span> <span class="token punctuation">}</span></code></pre></div>
+<blockquote>
+<p>Output</p>
+</blockquote>
+<div class="gatsby-highlight" data-language="text"><pre class="language-text"><code class="language-text">is:3 line:3 on:1 one:1 so:1 this:3 three:1 two:1</code></pre></div>
+<p>Ví dụ ở trên vẫn chạy ổn, chỉ có điều là logic tìm word và logic đếm word trộn lẫn với nhau. Ví dụ dưới đây sử dụng Fiber để tách biệt logic</p>
+<blockquote>
+<p>Ví dụ: Đếm số lần xuất hiện của các từ dùng Fiber</p>
+</blockquote>
+<div class="gatsby-highlight" data-language="ruby"><pre class="language-ruby"><code class="language-ruby">words <span class="token operator">=</span> <span class="token class-name">Fiber</span><span class="token punctuation">.</span><span class="token keyword">new</span> <span class="token keyword">do</span>                      <span class="token comment">#</span>
+  <span class="token builtin">File</span><span class="token punctuation">.</span>foreach<span class="token punctuation">(</span><span class="token string-literal"><span class="token string">"./testfile"</span></span><span class="token punctuation">)</span> <span class="token keyword">do</span> <span class="token operator">|</span>line<span class="token operator">|</span>    <span class="token comment">#</span>
+    line<span class="token punctuation">.</span>scan<span class="token punctuation">(</span><span class="token regex-literal"><span class="token regex">/\w+/</span></span><span class="token punctuation">)</span> <span class="token keyword">do</span> <span class="token operator">|</span>word<span class="token operator">|</span>            <span class="token comment">#</span>
+      Fiber<span class="token punctuation">.</span><span class="token keyword">yield</span> word<span class="token punctuation">.</span>downcase           <span class="token comment"># Dừng chạy code cho tới khi resume được gọi, khi resume gọi sẽ nhận về giá trị được passed</span>
+    <span class="token keyword">end</span>                                   <span class="token comment"># trong Fiber.yield</span>
+  <span class="token keyword">end</span>                                     <span class="token comment">#</span>
+  <span class="token keyword">nil</span>                                     <span class="token comment">#</span>
+<span class="token keyword">end</span>
+
+counts <span class="token operator">=</span> <span class="token class-name">Hash</span><span class="token punctuation">.</span><span class="token keyword">new</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span>
+<span class="token keyword">while</span> <span class="token punctuation">(</span>word <span class="token operator">=</span> words<span class="token punctuation">.</span>resume<span class="token punctuation">)</span>             <span class="token comment"># Gọi lần đầu sẽ chạy code trong fiber cho tới khi gặp Fiber.yield và nhận giá trị được passed</span>
+  counts<span class="token punctuation">[</span>word<span class="token punctuation">]</span> <span class="token operator">+=</span> <span class="token number">1</span>                     <span class="token comment"># trong Fiber.yield, các lần sau sẽ tiếp tục như vậy</span>
+<span class="token keyword">end</span>
+
+counts<span class="token punctuation">.</span>keys<span class="token punctuation">.</span>sort<span class="token punctuation">.</span><span class="token keyword">each</span> <span class="token punctuation">{</span> <span class="token operator">|</span>k<span class="token operator">|</span> print <span class="token string-literal"><span class="token string">"</span><span class="token interpolation"><span class="token delimiter punctuation">#{</span><span class="token content">k</span><span class="token delimiter punctuation">}</span></span><span class="token string">:</span><span class="token interpolation"><span class="token delimiter punctuation">#{</span><span class="token content">counts<span class="token punctuation">[</span>k<span class="token punctuation">]</span></span><span class="token delimiter punctuation">}</span></span><span class="token string"> "</span></span> <span class="token punctuation">}</span></code></pre></div>
+<p>Cấu trúc của Fiber là sẽ nhận 1 code block và trả về 1 fiber object. Không giống thread, code trong block của một fiber không chạy một lèo ngay lập tức. Sau khi một fiber được tạo, chúng ta có thể gọi <code class="language-text">resume</code> trên fiber object đó. Gọi <code class="language-text">resume</code> lần đầu thì block code trong fiber mới được thực khi.</p>
+<p>Ở ví dụ trên,</p>
+<ul>
+<li>File <em>testfile</em> được open và chúng ta bắt đầu scan để lấy ra từng từ đơn lẻ và pass vào scan block.</li>
+<li>Trong block này, <code class="language-text">Fiber.yield</code> được gọi, việc gọi <code class="language-text">Fiber.yield</code> sẽ dừng việc thực thi code trong fiber tới khi <code class="language-text">resume</code> được gọi</li>
+<li>Khi ta gọi <code class="language-text">resume</code> từ fiber object, sẽ nhận về  giá trị được passed vào trong Fiber.yield và code tiếp tục chạy tới khi gặp Fiber.yield</li>
+<li>Cứ tiếp tục như vậy cho tới khi chạy hết logic trong fiber và vòng loop kết thúc.</li>
+</ul>
+<blockquote>
+<p>Ví dụ: Tạo số tuần tự chẵn vô tận, không chia hết cho 3</p>
+</blockquote>
+<div class="gatsby-highlight" data-language="ruby"><pre class="language-ruby"><code class="language-ruby">sequence_number <span class="token operator">=</span> <span class="token class-name">Fiber</span><span class="token punctuation">.</span><span class="token keyword">new</span> <span class="token keyword">do</span>
+  num <span class="token operator">=</span> <span class="token number">2</span>
+  loop <span class="token keyword">do</span>
+    Fiber<span class="token punctuation">.</span><span class="token keyword">yield</span><span class="token punctuation">(</span>num<span class="token punctuation">)</span> <span class="token keyword">unless</span> num <span class="token operator">%</span> <span class="token number">3</span> <span class="token operator">==</span> <span class="token number">0</span>
+    num <span class="token operator">+=</span> <span class="token number">2</span>
+  <span class="token keyword">end</span>
+<span class="token keyword">end</span>
+
+<span class="token number">10.</span>times <span class="token punctuation">{</span> puts sequence_number<span class="token punctuation">.</span>resume <span class="token punctuation">}</span></code></pre></div>
+<p>===</p>
+<p>Fibers chỉ là các objects, chúng ta có thể pass hoặc store như các biến nhưng lưu ý là Fiber chỉ có thể được <code class="language-text">resume</code> trong chính thread tạo ra nó.
+Chúng ta có thể sử dụng <code class="language-text">transfer</code> thay thế cho bộ đôi <code class="language-text">yield/resume</code>, nhưng sẽ phức tạp hơn.
+Ngoài ra thì còn có non-blocking fibers, các fibers sẽ được quản lý bởi fiber scheduler.</p>
+<h2 id="v-hiểu-về-ractor" style="position:relative;"><a href="#v-hi%E1%BB%83u-v%E1%BB%81-ractor" aria-label="v hiểu về ractor permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>V. Hiểu về Ractor</h2>
+<p>Rator vẫn chỉ là bản thử nghiệm (tính tới Ruby 3.2), chưa phải là chức năng chính thức.</p>
+<p>Ractor cho phép chạy <strong>true parallelism</strong> trong một Ruby interpreter đơn: mỗi Ractor có một GIL riêng biệt, để xử lý concurrent tốt hơn.</p>
+<h3 id="1-cách-ractor-hoạt-động" style="position:relative;"><a href="#1-c%C3%A1ch-ractor-ho%E1%BA%A1t-%C4%91%E1%BB%99ng" aria-label="1 cách ractor hoạt động permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>1. Cách Ractor hoạt động</h3>
+<p>Ractors cho phép <strong>true parallelism</strong> trong một Ruby interpreter tách biệt: mỗi Ractor duy trì một GIL riêng, để đảm bảo performance tốt hơn. Để đảm bảo điều này thì việc truy cập các variables các biến bên ngoài scope của ractor bị giới hạn và việc giao tiếp giữa các ractors cũng chỉ được thực việc với một vài cách hạn chế.</p>
+<p>Bạn có thể hiểu 1 ractor sẽ là 1 căn phòng (chứa code) với duy nhất 1 cửa vào “entrance” và 1 cửa ra “exit”. Và chúng ta có thể phải xếp hàng ở cửa vào trong một số trường hợp.</p>
+<p>Tạo ra một ractor bằng <code class="language-text">Ractor.new</code>, sẽ luôn luôn nhận 1 block code, đây sẽ là đoạn code nằm trong căn phòng của chúng ta. Ngoài ra thì <code class="language-text">Ractor.new</code> còn nhận thêm một vài tham số khác, nhưng <code class="language-text">name</code> - unique name của Ractor.</p>
+<p>Một khi một ractor được tạo ra, thread tạo ra ractor đó sẽ được gọi là <code class="language-text">main</code> ractor và có thể được truy cập thông qua <code class="language-text">Ractor.main</code></p>
+<p>Các Ractors tương tác nhau bằng 1 trong 4 cách sau:</p>
+<ul>
+<li>Một Ractor (bao gồm main thread) có thể gửi các arguments tới 1 Ractor được biết trước đó (thông qua unique name …) Nói một cách ẩn dụ, thì tương ứng với việc yêu cầu ai đó đứng trước hàng chờ của một cửa vào “entrance” của một căn phòng khác. Có một điều cần lưu ý là hàng chờ này là vô hạn (ko có giới hạn con số) và sau khi gửi thì ta <em>không bị blocked để chờ phản hồi</em>. Chúng ta dùng API <code class="language-text">send</code> để gửi message từ một ractor đến một ractor khác.</li>
+<li>Một Ractor (hoặc main thread) có thể nhận output từ một Ractor được biết trước đó. Nói một cách ẩn dụng, chúng ta lần này sẽ đợi ở cửa ra “exit” để chờ lấy món đồ tiếp theo xuất hiện và lấy nó đi. Dùng API <code class="language-text">take</code> để một ractor chờ nhận giá trị trả về của một ractor khác (api này sẽ block waiting)</li>
+<li>Bên trong một ractor, ractor có thể block waiting để chờ nhận một message sắp tới. Hiểu ẩn dụ là ta sẽ chờ ai đó xuất hiện và gõ cửa vào “entrance”. Ta dùng API <code class="language-text">Ractor.receive</code> - Class method, để chờ message ở cửa vào (api này sẽ block waiting)</li>
+<li>Trường hợp cuối cùng là bên trong một ractor, có thể block waiting chờ yêu cầu của một ractor khác. Chờ ai đó gõ cửa “Exit” để yêu cần nhận đồ. Ta dùng API <code class="language-text">Ractor.yield(obj)</code>, argument truyền vào là món đồ/message được gửi đi.</li>
+</ul>
+<p>Vòng đời của một ractor như sau:</p>
+<ul>
+<li>Đầu tiên, ractor được tạo bằng cách sử dụng <code class="language-text">Ractor.new</code>. Code block de được truyền vào start ngay lập tức, các arguments được passed tới <code class="language-text">new</code> sẽ được pass tới tới block code.</li>
+<li>Ractor được tạo ra thì <em>biệt lập hoàn toàn - isolated</em>, nghĩa là nó không thể truy cập được bất cứ thứ gì không được định nghĩa bên trong code block, không có globals, không có external locals. Chỉ có duy nhất 1 các để đưa value vào một ractor là thông qua method <code class="language-text">send</code></li>
+<li>Code block đưa vào ractor sẽ thực thi cho đến khi:
+<ul>
+<li>Code block gặp <code class="language-text">Ractor.yield</code> call, trường hợp này nó sẽ đợi một ractor khác gọi <code class="language-text">take</code>, khi ractor khác gọi <code class="language-text">take</code> thì ngay lập tức sẽ pass argument trong <code class="language-text">yield()</code> và tiếp tục chạy tiếp.</li>
+<li>Code block gặp <code class="language-text">Ractor.receive</code> call, nó sẽ đợi cho một ractor khác gọi <code class="language-text">send</code>, arguments được gửi bởi <code class="language-text">send</code> là giá trị trả về của <code class="language-text">Ractor.receive</code></li>
+<li>Code block kết thúc. Giá trị của expression cuối cùng sẽ gửi cho ractor nào dùng <code class="language-text">take</code> để nhận.</li>
+</ul>
+</li>
+</ul>
+<p>Tiếp theo hãy quay lại bằng toán đếm từ</p>
+<blockquote>
+<p>Ví dụ: Đếm từ bằng Ractor</p>
+</blockquote>
+<div class="gatsby-highlight" data-language="ruby"><pre class="language-ruby"><code class="language-ruby">reader <span class="token operator">=</span> <span class="token class-name">Ractor</span><span class="token punctuation">.</span><span class="token keyword">new</span><span class="token punctuation">(</span><span class="token symbol">name</span><span class="token operator">:</span> <span class="token string-literal"><span class="token string">"reader"</span></span><span class="token punctuation">)</span> <span class="token keyword">do</span>
+  <span class="token builtin">File</span><span class="token punctuation">.</span>foreach<span class="token punctuation">(</span><span class="token string-literal"><span class="token string">"testfile"</span></span><span class="token punctuation">)</span> <span class="token keyword">do</span> <span class="token operator">|</span>line<span class="token operator">|</span>
+    line<span class="token punctuation">.</span>scan<span class="token punctuation">(</span><span class="token regex-literal"><span class="token regex">/\w+/</span></span><span class="token punctuation">)</span> <span class="token keyword">do</span> <span class="token operator">|</span>word<span class="token operator">|</span>
+      Ractor<span class="token punctuation">.</span><span class="token keyword">yield</span><span class="token punctuation">(</span>word<span class="token punctuation">.</span>downcase<span class="token punctuation">)</span>
+    <span class="token keyword">end</span>
+  <span class="token keyword">end</span>
+
+  <span class="token keyword">nil</span> <span class="token comment"># Giá trị expression cuối cùng của code block</span>
+<span class="token keyword">end</span>
+
+counter <span class="token operator">=</span> <span class="token class-name">Ractor</span><span class="token punctuation">.</span><span class="token keyword">new</span><span class="token punctuation">(</span>reader<span class="token punctuation">,</span> <span class="token symbol">name</span><span class="token operator">:</span> <span class="token string-literal"><span class="token string">"counter"</span></span><span class="token punctuation">)</span> <span class="token keyword">do</span> <span class="token operator">|</span>source<span class="token operator">|</span>
+  result <span class="token operator">=</span> <span class="token class-name">Hash</span><span class="token punctuation">.</span><span class="token keyword">new</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span>
+  <span class="token keyword">while</span><span class="token punctuation">(</span>word <span class="token operator">=</span> source<span class="token punctuation">.</span>take<span class="token punctuation">)</span>
+    result<span class="token punctuation">[</span>word<span class="token punctuation">]</span> <span class="token operator">+=</span><span class="token number">1</span>
+  <span class="token keyword">end</span>
+  result
+<span class="token keyword">end</span>
+
+counts <span class="token operator">=</span> counter<span class="token punctuation">.</span>take
+counts<span class="token punctuation">.</span>keys<span class="token punctuation">.</span>sort<span class="token punctuation">.</span><span class="token keyword">each</span> <span class="token punctuation">{</span> <span class="token operator">|</span>word<span class="token operator">|</span> p <span class="token string-literal"><span class="token string">"</span><span class="token interpolation"><span class="token delimiter punctuation">#{</span><span class="token content">word</span><span class="token delimiter punctuation">}</span></span><span class="token string">:</span><span class="token interpolation"><span class="token delimiter punctuation">#{</span><span class="token content">counts<span class="token punctuation">[</span>k<span class="token punctuation">]</span></span><span class="token delimiter punctuation">}</span></span><span class="token string">"</span></span><span class="token punctuation">}</span></code></pre></div>
+<h3 id="2-truyền-variable-vào-ractor" style="position:relative;"><a href="#2-truy%E1%BB%81n-variable-v%C3%A0o-ractor" aria-label="2 truyền variable vào ractor permalink" class="anchor before"><svg aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>2. Truyền Variable vào Ractor</h3></section><hr/><footer><div class="bio"><div data-gatsby-image-wrapper="" style="width:50px;height:50px" class="gatsby-image-wrapper bio-avatar"><div aria-hidden="true" data-placeholder-image="" style="opacity:1;transition:opacity 500ms linear;background-color:#281818;width:50px;height:50px;position:relative"></div><picture><source type="image/avif" data-srcset="/static/de343e29a397887e80326c3d6d8a677c/d4bf4/profile-pic.avif 50w,/static/de343e29a397887e80326c3d6d8a677c/ee81f/profile-pic.avif 100w" sizes="50px"/><source type="image/webp" data-srcset="/static/de343e29a397887e80326c3d6d8a677c/3faea/profile-pic.webp 50w,/static/de343e29a397887e80326c3d6d8a677c/6a679/profile-pic.webp 100w" sizes="50px"/><img data-gatsby-image-ssr="" layout="fixed" data-main-image="" style="opacity:0" sizes="50px" decoding="async" loading="lazy" data-src="/static/de343e29a397887e80326c3d6d8a677c/d24ee/profile-pic.jpg" data-srcset="/static/de343e29a397887e80326c3d6d8a677c/d24ee/profile-pic.jpg 50w,/static/de343e29a397887e80326c3d6d8a677c/64618/profile-pic.jpg 100w" alt="Profile picture"/></picture><noscript><picture><source type="image/avif" srcSet="/static/de343e29a397887e80326c3d6d8a677c/d4bf4/profile-pic.avif 50w,/static/de343e29a397887e80326c3d6d8a677c/ee81f/profile-pic.avif 100w" sizes="50px"/><source type="image/webp" srcSet="/static/de343e29a397887e80326c3d6d8a677c/3faea/profile-pic.webp 50w,/static/de343e29a397887e80326c3d6d8a677c/6a679/profile-pic.webp 100w" sizes="50px"/><img data-gatsby-image-ssr="" layout="fixed" data-main-image="" style="opacity:0" sizes="50px" decoding="async" loading="lazy" src="/static/de343e29a397887e80326c3d6d8a677c/d24ee/profile-pic.jpg" srcSet="/static/de343e29a397887e80326c3d6d8a677c/d24ee/profile-pic.jpg 50w,/static/de343e29a397887e80326c3d6d8a677c/64618/profile-pic.jpg 100w" alt="Profile picture"/></picture></noscript><script type="module">const t="undefined"!=typeof HTMLImageElement&&"loading"in HTMLImageElement.prototype;if(t){const t=document.querySelectorAll("img[data-main-image]");for(let e of t){e.dataset.src&&(e.setAttribute("src",e.dataset.src),e.removeAttribute("data-src")),e.dataset.srcset&&(e.setAttribute("srcset",e.dataset.srcset),e.removeAttribute("data-srcset"));const t=e.parentNode.querySelectorAll("source[data-srcset]");for(let e of t)e.setAttribute("srcset",e.dataset.srcset),e.removeAttribute("data-srcset");e.complete&&(e.style.opacity=1,e.parentNode.parentNode.querySelector("[data-placeholder-image]").style.opacity=0)}}</script></div><p>Được viết bởi  <a href="https://github.com/jackiedo91"><strong>Jackie Do</strong></a>, người có một niềm vui nhỏ với lập trình web.</p></div></footer></article><nav class="blog-post-nav"><ul style="display:flex;flex-wrap:wrap;justify-content:space-between;list-style:none;padding:0"><li><a rel="prev" href="/2022-12-06-using-interractors-as-work-action-chains/">← <!-- -->Sử dụng gem Interactor để xây dựng các actions có tính tái sử dụng cao</a></li><li><a rel="next" href="/2023-01-01-sql-antipatterns-jaywalking-01/">SQL Antipatterns - Jaywalking (01)<!-- --> →</a></li></ul></nav></main><footer>© <!-- -->2023<!-- -->, Built with<!-- --> <a href="https://www.gatsbyjs.com">Gatsby</a></footer></div></div><div id="gatsby-announcer" style="position:absolute;top:0;width:1px;height:1px;padding:0;overflow:hidden;clip:rect(0, 0, 0, 0);white-space:nowrap;border:0" aria-live="assertive" aria-atomic="true"></div></div><script id="gatsby-script-loader">/*<![CDATA[*/window.pagePath="/2022-12-14-multi-tasks-in-ruby-say-hi-to-thread-fiber-ractor/";/*]]>*/</script><!-- slice-start id="_gatsby-scripts-1" -->
+          <script
+            id="gatsby-chunk-mapping"
+          >
+            window.___chunkMapping="{\"app\":[\"/app-9928ce23a855a6a0d625.js\"],\"component---cache-caches-gatsby-plugin-offline-app-shell-js\":[\"/component---cache-caches-gatsby-plugin-offline-app-shell-js-0056a07d156969b8c238.js\"],\"component---src-pages-404-js\":[\"/component---src-pages-404-js-0de819376661c433aa44.js\"],\"component---src-pages-index-js\":[\"/component---src-pages-index-js-5ce60c2999087ee1e1d5.js\"],\"component---src-pages-tags-js\":[\"/component---src-pages-tags-js-6dd069a2eea8e22a264f.js\"],\"component---src-pages-using-typescript-tsx\":[\"/component---src-pages-using-typescript-tsx-caf83dcc23974937b928.js\"],\"component---src-templates-blog-post-js\":[\"/component---src-templates-blog-post-js-9e8f2c8ea78e2b09e1d6.js\"],\"component---src-templates-tags-js\":[\"/component---src-templates-tags-js-c2f705c003c200b988e6.js\"]}";
+          </script>
+        <script>window.___webpackCompilationHash="03af79cd59fda61d4b3d";</script><script src="/webpack-runtime-619dddc0ac0cffb90838.js" async></script><script src="/framework-195f9a31e5a4e6cebf51.js" async></script><script src="/app-9928ce23a855a6a0d625.js" async></script><!-- slice-end id="_gatsby-scripts-1" --></body></html>
