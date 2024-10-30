@@ -1,8 +1,8 @@
 ---
-title: "Query Objects In Rails"
-date: "2023-09-05T00:00:00.000Z"
-description: "Using query object design pattern in Rails"
-tags: ["rails", "ruby", "design pattern"]
+title: "New features in Rails 2023 you may not know"
+date: "2023-10-13T00:00:00.000Z"
+description: "New features in Rails 2023 you may not know"
+tags: ["rails", "ruby", "2023"]
 ---
 
 ```toc
@@ -11,91 +11,149 @@ tags: ["rails", "ruby", "design pattern"]
 
 ## Giới thiệu
 
-Trong bài post hôm nay chúng ta sẽ làm quen với cách sử dụng `Query Object` pattern trong Rails.
-`Query Object` thường được sử dụng để đóng gói các logic cho việc query database, việc sử dụng pattern này sẽ khiến tăng khả năng tái sử dung (reusable), có khả năng kết hợp với các query objects khác (composable), và chuẩn hóa được các parameters đầu vào (parameterizable unit)
+Trong thế giới tech, mọi thứ đều được cập nhật mỗi ngày, và framework Ruby on Rails của chúng ra cũng không ngoại lệ. Bài bên dưới sẽ liệt kê ra một số features mới được thêm vào Rails năm 2023 này
 
-## I. Sử dụng query filters với ActiveRecord thông thường
+## I. Các features mới
 
-### 1. Sử dụng thông thường
+### 1. ActiveRecord Excluding
 
-Trong Rails, với sự giúp đỡ của ActiveRecord model ta có thể dễ dàng sử dụng các built-in methods để tạo các database queries dễ dàng như
-
-> Ví dụ 1: Query thông thường
+Hỗ trợ method `excluding` khi query
 
 ```ruby
-Company
-  .joins(:contracts)
-  .where(province: "Ho Chi Minh")
-  .where(contracts: { size_level: "Big"})
+## Old way
+User.where.not(id: users.map(&:id))
+=begin
+SELECT "users".* FROM "users"
+WHERE "users"."id" NOT IN (1,2)
+=end
+
+# New way
+User.all.excluding(users)
+=begin
+SELECT "users".* FROM "users"
+WHERE "users"."id" NOT IN (1,2)
+=end
 ```
 
-Nếu chúng ta sử dụng câu query ở trên khắp nơi trong app của chúng ta, khi chúng ta cần sửa đổi province hay level thì chúng ta phải cập nhật tất cả mọi nơi, như vậy sẽ rất tốn thời gian.
-Cách fix đơn giản nhất là sử dụng các class methods cho việc tái sử dụng và nhận các tham số
+### 2. ActiveRecord Strict Loading
 
-> Ví dụ 2: Refactor để có các class methods hỗ trợ
+Bắt buộc phải load association data chứ không lazy load như default behavior
 
 ```ruby
-# Cập nhật trong model
-class Company < ApplicationRecord
-  def self.by_province(province)
-    where(province: province)
-  end
-
-  def self.by_size_level(size_level)
-    joins(:contracts)
-      .where(contracts: { size_level: size_level })
-  end
-
-  # ...
+class Project < ApplicationRecord
+  has_many :comments, strict_loading: true
 end
 
-# Khi sử dụng
-Company
-  .by_province("Ho Chi Minh")
-  .by_size_level("Big")
+## Demo wrong usage
+project = Project.first
+project.comments
+
+# ActiveRecord::StrictLoadingViolationError
+# `Project` is marked as strict_loading ...
+
+## Demo correct usage
+project = Project.includes(:comments).first
 ```
 
-### 2. Khi các query filters là optional
+### 3. Generated Columns
 
-Khi các query filters là optional thì ta phải cập nhật code lại
-
-> Ví dụ 3: giả sử filter `by_province` là optional
+Giống như View của database nhưng nó là column, hiển thị data (được cấu trúc lại) ở column ảo, chỉ có thể xem không thể sửa trực tiếp được.
 
 ```ruby
-  def self.by_province(province)
-    where(province: province) if province.present?
+class AddNameVirtualColumnToUsers < ActiveRecord::Migration[7.0]
+  def change
+    add_column :users, :full_name, :virtual,
+               type: :string,
+               as: "first_name || ' ' || last_name",
+               stored: true
   end
+end
 ```
 
-Nếu chúng ta cập nhật code như ví dụ 3 thì các filters của chúng ta không thể "chain" được (không thể gọi nối tiếp nhau vì method trả về nil nếu province không tồn tại).
-Vấn đề này sẽ tự động được giải quyết nếu chúng ta sử dụng built-in method `scope` của ActiveRecord. Khi một scope trả về nil thì nó tự động chuyển đổi thành 1 giá trị khác để đảm bảo khả năng chainability của các scope.
+### 4. ActiveRecord attr_readonly
 
-> Ví dụ 4: Sử dụng scope thay vì class method
+Thêm method `attr_readonly` để xác định những attributes chỉ được sử dụng lúc create nhưng sẽ bị ignore khi update (lưu vào DB)
 
 ```ruby
-class Company < ApplicationRecord
-  scope :by_province, -> (province) { where(province: province) if province.present? }
-  scope :by_size_level, -> (size_level) {
-    if size_level.present?
-      joins(:contracts).where(contracts: { size_level: size_level })
-    end
-
-  }
-  # ...
+class Widget < ActiveRecord::Base
+  attr_readonly :key
 end
 
+## Demo
+w = Widget.create! key: 'foo'
+w.update! key: 'bar'
+w.key #=> 'bar'
+w.reload.key #=> 'foo'
 ```
 
-## II. Sử dụng query objects cho các domain-specific queries
+### 5. ActiveRecord with_options
 
-Code của chúng ta đã cải thiện phần nào kể từ ví dụ đầu tiên, nhưng kết quẻ cuối cùng vẫn còn vài chỗ  "bốc mùi" (smells).
+Một cách đơn giản để tránh việc các options của associations bị duplicated
 
-- Bởi vì toàn bộ là chainable queries nên chúng thường được sử dụng cùng nhau. It’s a chainable query, so it’s very likely that our filters will always be used together; we want to make sure our filters are tested in the same combinations they will actually be used in production, but no proper encapsulation exists;
+```ruby
+# Old way
+class Account < ActiveRecord::Base
+  has_many :customers, dependent: :destroy
+  has_many :products,  dependent: :destroy
+  has_many :invoices,  dependent: :destroy
+  has_many :expenses,  dependent: :destroy
+end
 
-- Our filters are optional; the logic to skip a filter is very specific and may not make sense in the general context of our ServiceOffering model. If we reuse a scope like that, we may inadvertently introduce a bug in our application if we’re not counting with the possibility of blank filters;
+# New way
+class Account < ActiveRecord::Base
+  with_options dependent: :destroy do
+    has_many :customers
+    has_many :products
+    has_many :invoices
+    has_many :expenses
+  end
+end
+```
 
-- We are joining with other tables, which feels outside of our model’s responsibility; whenever our query spans more than one table or reaches a certain complexity threshold, it’s a sign we could represent it with a query object.
+### 6. Using try instead of checking respond_to?
 
-### 1. xxx
+Sử dụng method `try` để gọi 1 public method, sẽ trả về nil nếu method không tồn tại thay vì báo exception như cách gọi thông thường
+> Nhìn hiệu quả giống cú pháp `&.` của Ruby
 
-https://thoughtbot.com/blog/a-case-for-query-objects-in-rails
+```ruby
+# Old way
+method_name if respond_to?(:method_name)
+(method_name if respond_to?(:method_name)) || default
+
+# New way
+try(:method_name)
+try(:method_name) || default
+```
+
+## II. Các features mới của ActionText Attachable
+
+### 1. Searching Users
+
+```ruby
+json.array! @users do |user|
+  json.sgid user.attachable_sgid
+  json.content render(
+    partial: 'users/user',
+    locals: { user: user },
+    formats: [:html]
+  )
+end
+```
+
+Signed GlobalIDs
+
+```ruby
+User.first.attachable_sgid.to_s
+
+# "eyJfcmFpb...."
+```
+
+### 2. Serialize Coders
+
+```ruby
+module ActionText
+  class RichText < Record
+    serialize :body, coder: ActionText::Content
+  end
+end
+```
